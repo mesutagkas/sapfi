@@ -1,5 +1,5 @@
 *&---------------------------------------------------------------------*
-*& Include /MDPES/EREC_P01_I03
+*& Include ZEM_P022_003
 *&---------------------------------------------------------------------*
 *& Class Definitions
 *&---------------------------------------------------------------------*
@@ -15,45 +15,45 @@ CLASS lcl_report DEFINITION.
     METHODS:
       " ZEM_T003'te ilgili formn için en son seqno'lu kaydı okur
       get_form_key
-        IMPORTING formn         TYPE zem_t003-formn
+        IMPORTING formn         TYPE zem_de_001
         RETURNING VALUE(result) TYPE ty_form_key,
 
       " ZEM_T008'de ilgili formn için en son seqno'lu login/guid bilgisini okur
       get_login_info
-        IMPORTING formn         TYPE zem_t003-formn
+        IMPORTING formn         TYPE zem_de_001
         RETURNING VALUE(result) TYPE ty_login_info,
 
       " ZEM_T010'da ilgili formn için en son seqno'lu partner numarasını okur
       get_partner_number
-        IMPORTING formn         TYPE zem_t003-formn
-        RETURNING VALUE(result) TYPE zem_t010-parnr,
+        IMPORTING formn         TYPE zem_de_001
+        RETURNING VALUE(result) TYPE parnr,
 
       " ZEM_F002_02 çağrısı ile form/gönderen/alıcı/tahsilat/değişiklik/hesap bilgilerini getirir
       get_form_details
         IMPORTING form_key      TYPE ty_form_key
                   login_info    TYPE ty_login_info
-                  partner_no    TYPE zem_t010-parnr
-        EXPORTING minfo         TYPE ty_minfo
-                  sender_info   TYPE ty_senderinfo
-                  receiver_info TYPE ty_receiverinfo
-                  recdt         TYPE ty_t_recdt
+                  partner_no    TYPE parnr
+        EXPORTING minfo         TYPE zem_s010
+                  sender_info   TYPE zem_s008
+                  receiver_info TYPE zem_s009
+                  recdt         TYPE zem_tt018
                   change_list   TYPE zchange_list_tt
-                  accno         TYPE ty_accno
+                  accno         TYPE zem_de_005
                   subrc         TYPE sy-subrc,
 
       " Tahsilat listesindeki (recdt-nettr) tutarları toplayıp tek bir toplam döner
       calculate_total_amount
-        IMPORTING recdt         TYPE ty_t_recdt
+        IMPORTING recdt         TYPE zem_tt018
         RETURNING VALUE(result) TYPE dmbtr,
 
       " Adobe Form (ZEM_AF_001) job'ını açar, formu üretir, job'ı kapatır ve PDF xstring döner
       generate_pdf_form
-        IMPORTING minfo         TYPE ty_minfo
-                  sender_info   TYPE ty_senderinfo
-                  receiver_info TYPE ty_receiverinfo
-                  recdt         TYPE ty_t_recdt
+        IMPORTING minfo         TYPE zem_s010
+                  sender_info   TYPE zem_s008
+                  receiver_info TYPE zem_s009
+                  recdt         TYPE zem_tt018
                   change_list   TYPE zchange_list_tt
-                  accno         TYPE ty_accno
+                  accno         TYPE zem_de_005
                   total_amount  TYPE dmbtr
         RETURNING VALUE(result) TYPE xstring,
 
@@ -65,14 +65,15 @@ CLASS lcl_report DEFINITION.
       " ArkSigner servis kimlik bilgilerini (app_id/pass) hard-code yerine
       " uyarlama tablosundan okur
       get_arksigner_config
-        RETURNING VALUE(result) TYPE ty_arksigner_config,
+        RETURNING VALUE(result) TYPE zeho_arksingerdt_sap_arksigne9,
 
       " ArkSigner e-imza workflow talebini kurar, proxy üzerinden gönderir
       " ve hata mesajını (varsa) döner; başarılıysa boş string döner
       send_to_arksigner
         IMPORTING pdf_base64    TYPE string
                   signer_info   TYPE ty_signer_info
-                  config        TYPE ty_arksigner_config
+                  started_by    TYPE string
+                  config        TYPE zeho_arksingerdt_sap_arksigne9
         RETURNING VALUE(result) TYPE string.
 
 ENDCLASS.
@@ -131,6 +132,7 @@ CLASS lcl_report IMPLEMENTATION.
     DATA(error_description) = send_to_arksigner(
       pdf_base64  = pdf_base64
       signer_info = signer_info
+      started_by  = p_stdby
       config      = config ).
 
     IF error_description IS NOT INITIAL.
@@ -289,7 +291,7 @@ CLASS lcl_report IMPLEMENTATION.
     " *- sistemde mevcut bir uyarlama tablosuyla değiştirilmelidir.
     " *- added by markus.abap 11.09.2026
     "-----------------------------------------------------------------*
-    SELECT SINGLE app_id, app_pass, started_by
+    SELECT SINGLE app_id, pass
       FROM zem_t_arkcfg
       INTO CORRESPONDING FIELDS OF @result.
 
@@ -299,47 +301,36 @@ CLASS lcl_report IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD send_to_arksigner.
-    "-----------------------------------------------------------------*
-    " NOT: request/response tipleri, ArkSigner consumer proxy'sinin
-    " (SPROXY ile üretilen) gerçek tipleriyle birebir aynı olmalıdır.
-    " Aşağıda projede üretildiği varsayılan proxy sınıf/tip adları
-    " kullanılmıştır - gerçek üretilmiş adlarla teyit edilip
-    " gerekirse düzeltilmelidir.
-    "-----------------------------------------------------------------*
-    DATA request  TYPE zco_si_sap_to_3rd_arksinger_mutaba=>output.
-    DATA response TYPE zco_si_sap_to_3rd_arksinger_mutaba=>input.
+    DATA request  TYPE zeho_arksingermt_sap_arksigne1.
+    DATA response TYPE zeho_arksingermt_sap_arksigner.
 
-    DATA(config_line) = VALUE zsi_arksigner_config(
-      app_id = config-app_id
-      pass   = config-app_pass ).
+    DATA(document_line) = VALUE zeho_arksingerdt_sap_arksigne6(
+      name                 = 'tanım : deneme'
+      description          = 'aciklama : deneme'
+      sign_type            = sign_type_pades
+      sign_validation_time = sign_validation_est ).
 
-    DATA(document_line) = VALUE zsi_arksigner_document(
-      name                    = |tanım : deneme|
-      description             = |aciklama : deneme|
-      sign_type               = 'PAdES'
-      sign_validation_time    = 'EST' ).
+    DATA(post_operation_line) = VALUE zeho_arksingerdt_sap_arksigne4(
+      is_document_to_be_archived     = arksigner_flag_false
+      send_ftp                       = arksigner_flag_false
+      send_mail                      = arksigner_flag_false
+      save_to_folder                 = arksigner_flag_false
+      is_send_to_all_users_in_workfl = arksigner_flag_false
+      send_to_web_service            = arksigner_flag_false ).
 
-    DATA(post_operation_line) = VALUE zsi_arksigner_post_operation(
-      is_document_to_be_archived      = abap_false
-      send_ftp                        = abap_false
-      send_mail                       = abap_false
-      save_to_folder                  = abap_false
-      is_send_to_all_users_in_workfl  = abap_false
-      send_to_web_service              = abap_false ).
-
-    DATA(file_line) = VALUE zsi_arksigner_file(
+    DATA(file_line) = VALUE zeho_arksingerdt_sap_arksigne5(
       data      = pdf_base64
-      file_name = 'adobe.pdf'
-      file_type = '0' ).
+      file_name = file_name_pdf
+      file_type = file_type_pdf ).
 
-    DATA(workflow_step_line) = VALUE zsi_arksigner_workflow_step(
+    DATA(workflow_step_line) = VALUE zeho_arksingerdt_sap_arksigne1(
       username      = ''
       name          = signer_info-name
       surname       = signer_info-surname
       idnumber      = signer_info-id_no
       email_address = signer_info-email
-      order_no      = '1'
-      task_type     = '0'
+      order_no      = workflow_order_first
+      task_type     = workflow_task_type_sign
       worflow_step_privilege_model_l = VALUE #(
         ( workflow_privilege_type = privilege_view )
         ( workflow_privilege_type = privilege_sign ) )
@@ -347,20 +338,20 @@ CLASS lcl_report IMPLEMENTATION.
         ( workflow_step_notification_typ = notification_mail )
         ( workflow_step_notification_typ = notification_sms ) ) ).
 
-    DATA(workflow_line) = VALUE zsi_arksigner_workflow(
-      workflow_started_by             = config-started_by
-      send_notification_mail_to_firs  = abap_true
-      add_qr                          = abap_true
-      post_operation                  = VALUE #( ( post_operation_line ) )
-      document_workflow               = VALUE #( ( document_line ) )
-      file_list                       = VALUE #( ( file_line ) )
-      workflow_step_list              = VALUE #( ( workflow_step_line ) ) ).
+    DATA(workflow_line) = VALUE zeho_arksingerdt_sap_arksigne2(
+      workflow_started_by            = started_by
+      send_notification_mail_to_firs = arksigner_flag_true
+      add_qr                         = arksigner_flag_true
+      post_operation                 = VALUE #( ( post_operation_line ) )
+      document_workflow              = VALUE #( ( document_line ) )
+      file_list                      = VALUE #( ( file_line ) )
+      workflow_step_list             = VALUE #( ( workflow_step_line ) ) ).
 
-    request-mt_sap_arksigner_mutabakat_eim-config = VALUE #( ( config_line ) ).
-    request-mt_sap_arksigner_mutabakat_eim-workflow = VALUE #( ( workflow_line ) ).
+    APPEND config TO request-mt_sap_arksigner_mutabakat_eim-config.
+    APPEND workflow_line TO request-mt_sap_arksigner_mutabakat_eim-workflow.
 
     TRY.
-        DATA(proxy) = NEW zco_si_sap_to_3rd_arksinger_mutaba( ).
+        DATA(proxy) = NEW zeho_arksingerco_si_sap_to_3rd( ).
 
         proxy->si_sap_to_3rd_arksinger_mutaba(
           EXPORTING
