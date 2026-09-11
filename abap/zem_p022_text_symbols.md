@@ -24,11 +24,15 @@ bakımı yapılmalıdır (kod içinde `'...'` literal metin kullanılmamıştır
 | E10    | ArkSigner uyarlama (config) kaydı bulunamadı |
 
 ## Selection Screen Parameter Text (SE38 > Text Elements > Selection Texts)
-| Parametre | Metin |
-|-----------|-------|
-| P_FORMN   | Form Numarası |
-| P_NAME    | İmzalayan Ad |
-| P_SURN    | İmzalayan Soyad |
-| P_IDNR    | T.C. Kimlik No |
-| P_EMAIL   | E-posta Adresi |
-| P_STDBY   | Workflow'u Başlatan Kullanıcı (E-posta) |
+
+Ekranda parametrenin yanında görünen etiket buradan gelir. Bu bakım
+yapılmadan ekranda teknik alan adı (P_FORMN, P_SNAME, ...) görünür.
+
+| Parametre | Kimin Bilgisi          | Selection Text (etiket)                   |
+|-----------|------------------------|--------------------------------------------|
+| P_FORMN   | Mutabakat formu         | Mutabakat Form Numarası                     |
+| P_SNAME   | İmzalayan (dış kullanıcı) | İmzalayan - Ad                            |
+| P_SSURN   | İmzalayan (dış kullanıcı) | İmzalayan - Soyad                         |
+| P_SIDNR   | İmzalayan (dış kullanıcı) | İmzalayan - T.C. Kimlik No                |
+| P_SEMAIL  | İmzalayan (dış kullanıcı) | İmzalayan - E-posta Adresi                |
+| P_STDBY   | Workflow'u başlatan (SAP tarafı, iç kullanıcı) | Workflow'u Başlatan Kullanıcı E-postası |

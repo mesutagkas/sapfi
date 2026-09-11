@@ -20,9 +20,9 @@ SELECTION-SCREEN END OF BLOCK b01.
 *-------------------------------------------------------------------*
 SELECTION-SCREEN BEGIN OF BLOCK b02 WITH FRAME TITLE TEXT-b02.
   PARAMETERS:
-    p_name  TYPE string OBLIGATORY,
-    p_surn  TYPE string OBLIGATORY,
-    p_idnr  TYPE string OBLIGATORY,
-    p_email TYPE string OBLIGATORY,
-    p_stdby TYPE string OBLIGATORY.
+    p_sname  TYPE string OBLIGATORY,   " İmzalayan - Ad
+    p_ssurn  TYPE string OBLIGATORY,   " İmzalayan - Soyad
+    p_sidnr  TYPE string OBLIGATORY,   " İmzalayan - T.C. Kimlik No
+    p_semail TYPE string OBLIGATORY,   " İmzalayan - E-posta
+    p_stdby  TYPE string OBLIGATORY.   " Workflow'u başlatan kullanıcının e-postası
 SELECTION-SCREEN END OF BLOCK b02.

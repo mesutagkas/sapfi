@@ -144,10 +144,10 @@ CLASS lcl_report IMPLEMENTATION.
 
     pdf_base64 = convert_pdf_to_base64( pdf_data ).
 
-    signer_info-name    = p_name.
-    signer_info-surname = p_surn.
-    signer_info-id_no   = p_idnr.
-    signer_info-email   = p_email.
+    signer_info-name    = p_sname.
+    signer_info-surname = p_ssurn.
+    signer_info-id_no   = p_sidnr.
+    signer_info-email   = p_semail.
 
     config = get_arksigner_config( ).
 
