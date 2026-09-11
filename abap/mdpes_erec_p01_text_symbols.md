@@ -1,13 +1,13 @@
-# ZEM_P022 - Text Symbol / Text Element Listesi
+# /MDPES/EREC_P01 - Text Symbol / Text Element Listesi
 
 SE38 > Goto > Text Elements altında aşağıdaki text symbol ve text elementlerin
-bakımı yapılmalıdır (kod içinde `'...'` literal metin kullanılmamıştır - MDP ABAP standardı gereği).
+bakımı yapılmalıdır (kod içinde `'...'` literal metin kullanılmamıştır - md-abap standardı gereği).
 
 ## Selection Text (Block Title)
 | Symbol | Metin |
 |--------|-------|
 | B01    | Form Bilgisi |
-| B02    | İmzalayan / Workflow Bilgisi |
+| B02    | İmzalayan Bilgisi |
 
 ## Text Symbols (Hata Mesajları)
 | Symbol | Metin |
@@ -31,4 +31,3 @@ bakımı yapılmalıdır (kod içinde `'...'` literal metin kullanılmamıştır
 | P_SURN    | İmzalayan Soyad |
 | P_IDNR    | T.C. Kimlik No |
 | P_EMAIL   | E-posta Adresi |
-| P_STDBY   | Workflow'u Başlatan Kullanıcı (E-posta) |
