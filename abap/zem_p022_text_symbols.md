@@ -8,6 +8,7 @@ bakımı yapılmalıdır (kod içinde `'...'` literal metin kullanılmamıştır
 |--------|-------|
 | B01    | Form Bilgisi |
 | B02    | İmzalayan / Workflow Bilgisi |
+| B03    | Workflow'u Başlatan |
 
 ## Text Symbols (Hata Mesajları)
 | Symbol | Metin |

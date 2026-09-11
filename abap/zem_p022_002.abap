@@ -23,6 +23,14 @@ SELECTION-SCREEN BEGIN OF BLOCK b02 WITH FRAME TITLE TEXT-b02.
     p_sname  TYPE string OBLIGATORY,   " İmzalayan - Ad
     p_ssurn  TYPE string OBLIGATORY,   " İmzalayan - Soyad
     p_sidnr  TYPE string OBLIGATORY,   " İmzalayan - T.C. Kimlik No
-    p_semail TYPE string OBLIGATORY,   " İmzalayan - E-posta
-    p_stdby  TYPE string OBLIGATORY.   " Workflow'u başlatan kullanıcının e-postası
+    p_semail TYPE string OBLIGATORY.   " İmzalayan - E-posta
 SELECTION-SCREEN END OF BLOCK b02.
+
+*-------------------------------------------------------------------*
+* *- Workflow'u başlatan kullanıcı imzalayandan ayrı bir blokta
+* *- changed by markus.abap 11.09.2026
+*-------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK b03 WITH FRAME TITLE TEXT-b03.
+  PARAMETERS:
+    p_stdby TYPE string OBLIGATORY.
+SELECTION-SCREEN END OF BLOCK b03.

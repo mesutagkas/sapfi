@@ -100,8 +100,11 @@ CLASS lcl_report IMPLEMENTATION.
   METHOD f4_help_for_form.
     DATA search_help_list TYPE ty_t_form_search_help.
     DATA return_tab       TYPE STANDARD TABLE OF ddshretval.
+    DATA return_line      LIKE LINE OF return_tab.
     DATA field_mapping    TYPE STANDARD TABLE OF dselc.
     DATA mapping_line     LIKE LINE OF field_mapping.
+    DATA dynpfields       TYPE STANDARD TABLE OF dynpread.
+    DATA dynpfield        LIKE LINE OF dynpfields.
 
     " Not: ZEM_T010'da SNAME/SSURN alanları henüz eklenmedi (bkz.
     " zem_p022_text_symbols.md). Bu iki alan SE11'de oluşturulunca hem
@@ -141,6 +144,30 @@ CLASS lcl_report IMPLEMENTATION.
         parameter_error = 1
         no_values_found = 2
         OTHERS          = 3.
+
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+    " DYNPFLD_MAPPING bazı sistemlerde ekranı otomatik güncellemeyebiliyor -
+    " garantiye almak için RETURN_TAB'daki (DYNPFLD_MAPPING sayesinde artık
+    " P_FORMN/P_SEMAIL için de dolu gelen) değerleri DYNP_VALUES_UPDATE ile
+    " elle de ekrana yazıyoruz.
+    LOOP AT return_tab INTO return_line.
+      CLEAR dynpfield.
+      dynpfield-fieldname  = return_line-fieldname.
+      dynpfield-fieldvalue = return_line-fieldval.
+      APPEND dynpfield TO dynpfields.
+    ENDLOOP.
+
+    IF dynpfields IS NOT INITIAL.
+      CALL FUNCTION 'DYNP_VALUES_UPDATE'
+        EXPORTING
+          dyname     = sy-repid
+          dynumb     = sy-dynnr
+        TABLES
+          dynpfields = dynpfields.
+    ENDIF.
   ENDMETHOD.
 
   METHOD prepare_data.
