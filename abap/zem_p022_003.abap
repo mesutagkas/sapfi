@@ -229,6 +229,11 @@ CLASS lcl_report IMPLEMENTATION.
       MESSAGE TEXT-e05 TYPE 'E'.
     ENDIF.
 
+    " Not: function_name runtime'da belirlendiği için (dinamik çağrı),
+    " burada inline DATA(...) bildirimi kullanılamaz - arayüz compile
+    " time'da bilinmiyor. Bu yüzden form_output önceden tanımlanır.
+    DATA form_output TYPE fpformoutput.
+
     CALL FUNCTION function_name
       EXPORTING
         /1bcdwb/docparams = VALUE sfpdocparams( )
@@ -242,7 +247,7 @@ CLASS lcl_report IMPLEMENTATION.
         toplam            = total_amount
         uzeit             = sy-uzeit
       IMPORTING
-        /1bcdwb/formoutput = DATA(form_output)
+        /1bcdwb/formoutput = form_output
       EXCEPTIONS
         usage_error       = 1
         system_error      = 2
