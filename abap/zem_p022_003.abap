@@ -13,19 +13,23 @@ CLASS lcl_report DEFINITION.
 
   PRIVATE SECTION.
     METHODS:
-      " ZEM_T003'te ilgili formn için en son seqno'lu kaydı okur
+      " ZEM_T003'te ilgili form_number için en son seqno'lu kaydı okur
+      " Not: parametre bilerek "formn" değil "form_number" olarak adlandırıldı -
+      " klasik (non-@) Open SQL'de yerel değişken adı tablo alanıyla (formn)
+      " aynı olursa alan referansı önceliklidir ve WHERE formn = formn gibi
+      " her zaman doğru olan (yanlış) bir koşula dönüşür.
       get_form_key
-        IMPORTING formn         TYPE zem_de_001
+        IMPORTING form_number   TYPE zem_de_001
         RETURNING VALUE(result) TYPE ty_form_key,
 
-      " ZEM_T008'de ilgili formn için en son seqno'lu login/guid bilgisini okur
+      " ZEM_T008'de ilgili form_number için en son seqno'lu login/guid bilgisini okur
       get_login_info
-        IMPORTING formn         TYPE zem_de_001
+        IMPORTING form_number   TYPE zem_de_001
         RETURNING VALUE(result) TYPE ty_login_info,
 
-      " ZEM_T010'da ilgili formn için en son seqno'lu partner numarasını okur
+      " ZEM_T010'da ilgili form_number için en son seqno'lu partner numarasını okur
       get_partner_number
-        IMPORTING formn         TYPE zem_de_001
+        IMPORTING form_number   TYPE zem_de_001
         RETURNING VALUE(result) TYPE parnr,
 
       " ZEM_F002_02 çağrısı ile form/gönderen/alıcı/tahsilat/değişiklik/hesap bilgilerini getirir
@@ -86,9 +90,28 @@ CLASS lcl_report IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD prepare_data.
-    DATA(form_key)   = get_form_key( p_formn ).
-    DATA(login_info) = get_login_info( p_formn ).
-    DATA(partner_no) = get_partner_number( p_formn ).
+    " Not: eski/düşük ABAP sürümleriyle uyumluluk için inline DATA(...)
+    " bildirimleri yerine klasik DATA tanımları kullanılıyor.
+    DATA form_key          TYPE ty_form_key.
+    DATA login_info        TYPE ty_login_info.
+    DATA partner_no        TYPE parnr.
+    DATA minfo             TYPE zem_s010.
+    DATA sender_info       TYPE zem_s008.
+    DATA receiver_info     TYPE zem_s009.
+    DATA recdt             TYPE zem_tt018.
+    DATA change_list       TYPE zchange_list_tt.
+    DATA accno             TYPE zem_de_005.
+    DATA form_subrc        TYPE sy-subrc.
+    DATA total_amount      TYPE dmbtr.
+    DATA pdf_data          TYPE xstring.
+    DATA pdf_base64        TYPE string.
+    DATA signer_info       TYPE ty_signer_info.
+    DATA config            TYPE zeho_arksingerdt_sap_arksigne9.
+    DATA error_description TYPE string.
+
+    form_key   = get_form_key( p_formn ).
+    login_info = get_login_info( p_formn ).
+    partner_no = get_partner_number( p_formn ).
 
     get_form_details(
       EXPORTING
@@ -96,21 +119,21 @@ CLASS lcl_report IMPLEMENTATION.
         login_info    = login_info
         partner_no    = partner_no
       IMPORTING
-        minfo         = DATA(minfo)
-        sender_info   = DATA(sender_info)
-        receiver_info = DATA(receiver_info)
-        recdt         = DATA(recdt)
-        change_list   = DATA(change_list)
-        accno         = DATA(accno)
-        subrc         = DATA(form_subrc) ).
+        minfo         = minfo
+        sender_info   = sender_info
+        receiver_info = receiver_info
+        recdt         = recdt
+        change_list   = change_list
+        accno         = accno
+        subrc         = form_subrc ).
 
     IF form_subrc <> 0.
       MESSAGE TEXT-e01 TYPE 'E'.
     ENDIF.
 
-    DATA(total_amount) = calculate_total_amount( recdt ).
+    total_amount = calculate_total_amount( recdt ).
 
-    DATA(pdf_data) = generate_pdf_form(
+    pdf_data = generate_pdf_form(
       minfo         = minfo
       sender_info   = sender_info
       receiver_info = receiver_info
@@ -119,17 +142,16 @@ CLASS lcl_report IMPLEMENTATION.
       accno         = accno
       total_amount  = total_amount ).
 
-    DATA(pdf_base64) = convert_pdf_to_base64( pdf_data ).
+    pdf_base64 = convert_pdf_to_base64( pdf_data ).
 
-    DATA(signer_info) = VALUE ty_signer_info(
-      name    = p_name
-      surname = p_surn
-      id_no   = p_idnr
-      email   = p_email ).
+    signer_info-name    = p_name.
+    signer_info-surname = p_surn.
+    signer_info-id_no   = p_idnr.
+    signer_info-email   = p_email.
 
-    DATA(config) = get_arksigner_config( ).
+    config = get_arksigner_config( ).
 
-    DATA(error_description) = send_to_arksigner(
+    error_description = send_to_arksigner(
       pdf_base64  = pdf_base64
       signer_info = signer_info
       started_by  = p_stdby
@@ -141,11 +163,11 @@ CLASS lcl_report IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_form_key.
-    SELECT SINGLE formn, seqno
+    SELECT SINGLE formn seqno
+      INTO (result-formn, result-seqno)
       FROM zem_t003
-      INTO CORRESPONDING FIELDS OF @result
-      WHERE formn = @formn
-        AND seqno = ( SELECT MAX( seqno ) FROM zem_t003 WHERE formn = @formn ).
+      WHERE formn = form_number
+        AND seqno = ( SELECT MAX( seqno ) FROM zem_t003 WHERE formn = form_number ).
 
     IF sy-subrc <> 0.
       MESSAGE TEXT-e02 TYPE 'E'.
@@ -153,11 +175,11 @@ CLASS lcl_report IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_login_info.
-    SELECT SINGLE lgnid, guuid
+    SELECT SINGLE lgnid guuid
+      INTO (result-login_id, result-guid)
       FROM zem_t008
-      INTO CORRESPONDING FIELDS OF @result
-      WHERE formn = @formn
-        AND seqno = ( SELECT MAX( seqno ) FROM zem_t008 WHERE formn = @formn ).
+      WHERE formn = form_number
+        AND seqno = ( SELECT MAX( seqno ) FROM zem_t008 WHERE formn = form_number ).
 
     IF sy-subrc <> 0.
       MESSAGE TEXT-e03 TYPE 'E'.
@@ -166,10 +188,10 @@ CLASS lcl_report IMPLEMENTATION.
 
   METHOD get_partner_number.
     SELECT SINGLE parnr
+      INTO result
       FROM zem_t010
-      INTO @result
-      WHERE formn = @formn
-        AND seqno = ( SELECT MAX( seqno ) FROM zem_t010 WHERE formn = @formn ).
+      WHERE formn = form_number
+        AND seqno = ( SELECT MAX( seqno ) FROM zem_t010 WHERE formn = form_number ).
 
     IF sy-subrc <> 0.
       MESSAGE TEXT-e04 TYPE 'E'.
@@ -196,22 +218,29 @@ CLASS lcl_report IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD calculate_total_amount.
-    LOOP AT recdt INTO DATA(recdt_line).
-      DATA(amount_text) = CONV string( recdt_line-nettr ).
+    DATA recdt_line  LIKE LINE OF recdt.
+    DATA amount_text TYPE string.
+    DATA amount      TYPE dmbtr.
+
+    LOOP AT recdt INTO recdt_line.
+      amount_text = recdt_line-nettr.
       CONDENSE amount_text NO-GAPS.
       REPLACE ALL OCCURRENCES OF '.' IN amount_text WITH ''.
       REPLACE ALL OCCURRENCES OF ',' IN amount_text WITH '.'.
 
-      result = result + CONV dmbtr( amount_text ).
+      amount = amount_text.
+      result = result + amount.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD generate_pdf_form.
+    DATA function_name TYPE rs38l_fnam.
+
     CALL FUNCTION 'FP_FUNCTION_MODULE_NAME'
       EXPORTING
         i_name     = adobe_form_name
       IMPORTING
-        e_funcname = DATA(function_name).
+        e_funcname = function_name.
 
     DATA outputparams TYPE sfpoutputparams.
 
@@ -233,10 +262,11 @@ CLASS lcl_report IMPLEMENTATION.
     " burada inline DATA(...) bildirimi kullanılamaz - arayüz compile
     " time'da bilinmiyor. Bu yüzden form_output önceden tanımlanır.
     DATA form_output TYPE fpformoutput.
+    DATA docparams   TYPE sfpdocparams.
 
     CALL FUNCTION function_name
       EXPORTING
-        /1bcdwb/docparams = VALUE sfpdocparams( )
+        /1bcdwb/docparams = docparams
         minfo             = minfo
         senderinfo        = sender_info
         receiverinfo      = receiver_info
@@ -296,9 +326,9 @@ CLASS lcl_report IMPLEMENTATION.
     " *- sistemde mevcut bir uyarlama tablosuyla değiştirilmelidir.
     " *- added by markus.abap 11.09.2026
     "-----------------------------------------------------------------*
-    SELECT SINGLE app_id, pass
-      FROM zem_t_arkcfg
-      INTO CORRESPONDING FIELDS OF @result.
+    SELECT SINGLE app_id pass
+      INTO (result-app_id, result-pass)
+      FROM zem_t_arkcfg.
 
     IF sy-subrc <> 0.
       MESSAGE TEXT-e10 TYPE 'E'.
@@ -306,57 +336,71 @@ CLASS lcl_report IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD send_to_arksigner.
-    DATA request  TYPE zeho_arksingermt_sap_arksigne1.
-    DATA response TYPE zeho_arksingermt_sap_arksigner.
+    DATA request            TYPE zeho_arksingermt_sap_arksigne1.
+    DATA response            TYPE zeho_arksingermt_sap_arksigner.
+    DATA document_line       TYPE zeho_arksingerdt_sap_arksigne6.
+    DATA post_operation_line TYPE zeho_arksingerdt_sap_arksigne4.
+    DATA file_line           TYPE zeho_arksingerdt_sap_arksigne5.
+    DATA workflow_step_line  TYPE zeho_arksingerdt_sap_arksigne1.
+    DATA workflow_line       TYPE zeho_arksingerdt_sap_arksigne2.
+    DATA notification_line   TYPE zeho_arksingerdt_sap_arksigner.
+    DATA privilege_line      TYPE zeho_arksingerdt_sap_arksigne3.
+    DATA proxy               TYPE REF TO zeho_arksingerco_si_sap_to_3rd.
+    DATA system_fault        TYPE REF TO cx_ai_system_fault.
+    DATA application_fault   TYPE REF TO cx_ai_application_fault.
 
-    DATA(document_line) = VALUE zeho_arksingerdt_sap_arksigne6(
-      name                 = 'tanım : deneme'
-      description          = 'aciklama : deneme'
-      sign_type            = sign_type_pades
-      sign_validation_time = sign_validation_est ).
+    document_line-name                 = 'tanım : deneme'.
+    document_line-description          = 'aciklama : deneme'.
+    document_line-sign_type            = sign_type_pades.
+    document_line-sign_validation_time = sign_validation_est.
 
-    DATA(post_operation_line) = VALUE zeho_arksingerdt_sap_arksigne4(
-      is_document_to_be_archived     = arksigner_flag_false
-      send_ftp                       = arksigner_flag_false
-      send_mail                      = arksigner_flag_false
-      save_to_folder                 = arksigner_flag_false
-      is_send_to_all_users_in_workfl = arksigner_flag_false
-      send_to_web_service            = arksigner_flag_false ).
+    post_operation_line-is_document_to_be_archived     = arksigner_flag_false.
+    post_operation_line-send_ftp                       = arksigner_flag_false.
+    post_operation_line-send_mail                      = arksigner_flag_false.
+    post_operation_line-save_to_folder                 = arksigner_flag_false.
+    post_operation_line-is_send_to_all_users_in_workfl = arksigner_flag_false.
+    post_operation_line-send_to_web_service             = arksigner_flag_false.
 
-    DATA(file_line) = VALUE zeho_arksingerdt_sap_arksigne5(
-      data      = pdf_base64
-      file_name = file_name_pdf
-      file_type = file_type_pdf ).
+    file_line-data      = pdf_base64.
+    file_line-file_name = file_name_pdf.
+    file_line-file_type = file_type_pdf.
 
-    DATA(workflow_step_line) = VALUE zeho_arksingerdt_sap_arksigne1(
-      username      = ''
-      name          = signer_info-name
-      surname       = signer_info-surname
-      idnumber      = signer_info-id_no
-      email_address = signer_info-email
-      order_no      = workflow_order_first
-      task_type     = workflow_task_type_sign
-      worflow_step_privilege_model_l = VALUE #(
-        ( workflow_privilege_type = privilege_view )
-        ( workflow_privilege_type = privilege_sign ) )
-      workflow_step_notification_lis = VALUE #(
-        ( workflow_step_notification_typ = notification_mail )
-        ( workflow_step_notification_typ = notification_sms ) ) ).
+    workflow_step_line-username      = ''.
+    workflow_step_line-name          = signer_info-name.
+    workflow_step_line-surname       = signer_info-surname.
+    workflow_step_line-idnumber      = signer_info-id_no.
+    workflow_step_line-email_address = signer_info-email.
+    workflow_step_line-order_no      = workflow_order_first.
+    workflow_step_line-task_type     = workflow_task_type_sign.
 
-    DATA(workflow_line) = VALUE zeho_arksingerdt_sap_arksigne2(
-      workflow_started_by            = started_by
-      send_notification_mail_to_firs = arksigner_flag_true
-      add_qr                         = arksigner_flag_true
-      post_operation                 = VALUE #( ( post_operation_line ) )
-      document_workflow              = VALUE #( ( document_line ) )
-      file_list                      = VALUE #( ( file_line ) )
-      workflow_step_list             = VALUE #( ( workflow_step_line ) ) ).
+    notification_line-workflow_step_notification_typ = notification_mail.
+    APPEND notification_line TO workflow_step_line-workflow_step_notification_lis.
+    CLEAR notification_line.
+    notification_line-workflow_step_notification_typ = notification_sms.
+    APPEND notification_line TO workflow_step_line-workflow_step_notification_lis.
+    CLEAR notification_line.
 
-    APPEND config TO request-mt_sap_arksigner_mutabakat_eim-config.
+    privilege_line-workflow_privilege_type = privilege_view.
+    APPEND privilege_line TO workflow_step_line-worflow_step_privilege_model_l.
+    CLEAR privilege_line.
+    privilege_line-workflow_privilege_type = privilege_sign.
+    APPEND privilege_line TO workflow_step_line-worflow_step_privilege_model_l.
+    CLEAR privilege_line.
+
+    workflow_line-workflow_started_by            = started_by.
+    workflow_line-send_notification_mail_to_firs = arksigner_flag_true.
+    workflow_line-add_qr                         = arksigner_flag_true.
+
+    APPEND post_operation_line TO workflow_line-post_operation.
+    APPEND document_line       TO workflow_line-document_workflow.
+    APPEND file_line           TO workflow_line-file_list.
+    APPEND workflow_step_line  TO workflow_line-workflow_step_list.
+
+    APPEND config        TO request-mt_sap_arksigner_mutabakat_eim-config.
     APPEND workflow_line TO request-mt_sap_arksigner_mutabakat_eim-workflow.
 
     TRY.
-        DATA(proxy) = NEW zeho_arksingerco_si_sap_to_3rd( ).
+        CREATE OBJECT proxy.
 
         proxy->si_sap_to_3rd_arksinger_mutaba(
           EXPORTING
@@ -364,10 +408,10 @@ CLASS lcl_report IMPLEMENTATION.
           IMPORTING
             input  = response ).
 
-      CATCH cx_ai_system_fault INTO DATA(system_fault).
+      CATCH cx_ai_system_fault INTO system_fault.
         result = system_fault->errortext.
 
-      CATCH cx_ai_application_fault INTO DATA(application_fault).
+      CATCH cx_ai_application_fault INTO application_fault.
         result = application_fault->get_text( ).
     ENDTRY.
   ENDMETHOD.
