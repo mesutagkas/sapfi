@@ -127,10 +127,16 @@ CLASS lcl_report IMPLEMENTATION.
     mapping_line-dyfldname = 'P_SEMAIL'.
     APPEND mapping_line TO field_mapping.
 
+    " DYNPPROG/DYNPNR: DYNPFLD_MAPPING'in hangi ekrana yazacağını bilmesi
+    " için gerekli - bunlar olmadan mapping hiçbir alana yazamaz (P_FORMN
+    " dahil), çünkü DYNPFLD_MAPPING verildiğinde FM'in "tetiklenen alanı
+    " otomatik doldur" varsayılan davranışı devre dışı kalır.
     CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
       EXPORTING
         retfield        = retfield
         value_org       = 'S'
+        dynpprog        = sy-repid
+        dynpnr          = sy-dynnr
       TABLES
         value_tab       = search_help_list
         return_tab      = return_tab
