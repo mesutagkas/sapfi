@@ -5,7 +5,7 @@
 *&---------------------------------------------------------------------*
 
 INITIALIZATION.
-  report = NEW #( ).
+  CREATE OBJECT report.
   report->initialization( ).
 
 START-OF-SELECTION.
