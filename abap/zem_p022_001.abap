@@ -22,14 +22,13 @@ TYPES: BEGIN OF ty_signer_info,
          email   TYPE string,
        END OF ty_signer_info.
 
-" P_FORMN için F4 (arama yardımı) popup'ında gösterilecek/seçilecek alanlar.
-" ZEM_T010'a SE11'de eklenmesi gereken SNAME (AD_NAMEFIRS) / SSURN (AD_NAMELAST)
-" alanlarının var olduğu varsayılıyor.
+" P_FORMN/P_SEMAIL için F4 (arama yardımı) popup'ında gösterilecek/seçilecek
+" alanlar. ZEM_T010'da şu an sadece FORMN/ACCNO/EMAIL var - SNAME/SSURN
+" (AD_NAMEFIRS/AD_NAMELAST) SE11'de eklenince bu tipe ve ilgili SELECT'e
+" (zem_p022_003, f4_help_for_form) geri eklenmeli.
 TYPES: BEGIN OF ty_form_search_help,
          formn TYPE zem_de_001,
          accno TYPE zem_de_005,
-         sname TYPE ad_namefirs,
-         ssurn TYPE ad_namelast,
          email TYPE ad_smtpadr,
        END OF ty_form_search_help.
 TYPES ty_t_form_search_help TYPE STANDARD TABLE OF ty_form_search_help WITH DEFAULT KEY.

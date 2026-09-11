@@ -103,24 +103,20 @@ CLASS lcl_report IMPLEMENTATION.
     DATA field_mapping    TYPE STANDARD TABLE OF dselc.
     DATA mapping_line     LIKE LINE OF field_mapping.
 
-    SELECT formn accno sname ssurn email
+    " Not: ZEM_T010'da SNAME/SSURN alanları henüz eklenmedi (bkz.
+    " zem_p022_text_symbols.md). Bu iki alan SE11'de oluşturulunca hem
+    " ty_form_search_help'e (zem_p022_001) hem SELECT listesine hem de
+    " aşağıdaki mapping'e geri eklenmeli.
+    SELECT formn accno email
       INTO CORRESPONDING FIELDS OF TABLE search_help_list
       FROM zem_t010
       ORDER BY formn.
 
     " DYNPFLD_MAPPING: value_tab'daki her sütunun hangi ekran alanına
     " yazılacağını FM'e söylüyor - kullanıcı hangi satırı seçerse seçsin,
-    " bu 4 alan BİRLİKTE dolar (F4'ü hangi alandan açtığından bağımsız).
+    " bu alanlar BİRLİKTE dolar (F4'ü hangi alandan açtığından bağımsız).
     mapping_line-fldname   = 'FORMN'.
     mapping_line-dyfldname = 'P_FORMN'.
-    APPEND mapping_line TO field_mapping.
-
-    mapping_line-fldname   = 'SNAME'.
-    mapping_line-dyfldname = 'P_SNAME'.
-    APPEND mapping_line TO field_mapping.
-
-    mapping_line-fldname   = 'SSURN'.
-    mapping_line-dyfldname = 'P_SSURN'.
     APPEND mapping_line TO field_mapping.
 
     mapping_line-fldname   = 'EMAIL'.
