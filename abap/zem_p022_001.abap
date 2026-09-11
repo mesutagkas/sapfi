@@ -23,6 +23,8 @@ TYPES: BEGIN OF ty_signer_info,
        END OF ty_signer_info.
 
 * ---Object References-----------------
+" lcl_report henüz zem_p022_003'te tanımlanmadığı için forward-declare edilir
+CLASS lcl_report DEFINITION DEFERRED.
 DATA report TYPE REF TO lcl_report.
 
 * ---Constants--------------------------
