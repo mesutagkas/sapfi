@@ -9,7 +9,12 @@ CLASS lcl_report DEFINITION.
   PUBLIC SECTION.
     METHODS:
       initialization,
-      prepare_data.
+      prepare_data,
+
+      " P_FORMN alanı için F4 (arama yardımı): ZEM_T010'daki onaycı kayıtlarını
+      " listeler, seçilen satırın form no/ad/soyad/e-posta bilgilerini
+      " ekrandaki P_FORMN/P_SNAME/P_SSURN/P_SEMAIL alanlarına yazar.
+      f4_help_for_form.
 
   PRIVATE SECTION.
     METHODS:
@@ -87,6 +92,62 @@ CLASS lcl_report IMPLEMENTATION.
 
   METHOD initialization.
     " Başlangıç değerlerini ata (gerekli değilse boş bırakılabilir)
+  ENDMETHOD.
+
+  METHOD f4_help_for_form.
+    DATA search_help_list TYPE ty_t_form_search_help.
+    DATA return_tab       TYPE STANDARD TABLE OF ddshretval.
+    DATA return_line      LIKE LINE OF return_tab.
+    DATA dynpfields       TYPE STANDARD TABLE OF dynpread.
+    DATA dynpfield        LIKE LINE OF dynpfields.
+
+    SELECT formn accno sname ssurn email
+      INTO CORRESPONDING FIELDS OF TABLE search_help_list
+      FROM zem_t010
+      ORDER BY formn.
+
+    CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+      EXPORTING
+        retfield        = 'FORMN'
+        value_org       = 'S'
+      TABLES
+        value_tab       = search_help_list
+        return_tab      = return_tab
+      EXCEPTIONS
+        parameter_error = 1
+        no_values_found = 2
+        OTHERS          = 3.
+
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+    " Seçilen satırın FORMN/SNAME/SSURN/EMAIL alanlarını ekrandaki
+    " P_FORMN/P_SNAME/P_SSURN/P_SEMAIL parametrelerine aktar.
+    LOOP AT return_tab INTO return_line.
+      CLEAR dynpfield.
+      CASE return_line-fieldname.
+        WHEN 'FORMN'.
+          dynpfield-fieldname = 'P_FORMN'.
+        WHEN 'SNAME'.
+          dynpfield-fieldname = 'P_SNAME'.
+        WHEN 'SSURN'.
+          dynpfield-fieldname = 'P_SSURN'.
+        WHEN 'EMAIL'.
+          dynpfield-fieldname = 'P_SEMAIL'.
+        WHEN OTHERS.
+          CONTINUE.
+      ENDCASE.
+      dynpfield-fieldvalue = return_line-fieldval.
+      APPEND dynpfield TO dynpfields.
+    ENDLOOP.
+
+    CALL FUNCTION 'DYNP_VALUES_UPDATE'
+      EXPORTING
+        dyname     = sy-repid
+        dynumb     = sy-dynnr
+      TABLES
+        dynpfields = dynpfields.
   ENDMETHOD.
 
   METHOD prepare_data.

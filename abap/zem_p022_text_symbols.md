@@ -36,3 +36,23 @@ yapılmadan ekranda teknik alan adı (P_FORMN, P_SNAME, ...) görünür.
 | P_SIDNR   | İmzalayan (dış kullanıcı) | İmzalayan - T.C. Kimlik No                |
 | P_SEMAIL  | İmzalayan (dış kullanıcı) | İmzalayan - E-posta Adresi                |
 | P_STDBY   | Workflow'u başlatan (SAP tarafı, iç kullanıcı) | Workflow'u Başlatan Kullanıcı E-postası |
+
+## ZEM_T010'a eklenmesi gereken alanlar (kod bunları bekliyor)
+
+`P_FORMN` alanına bağladığımız F4 arama yardımı (`f4_help_for_form` metodu,
+`AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_formn`), ZEM_T010'dan seçilen
+kaydın ad/soyad/e-posta bilgisini ekrana otomatik dolduruyor. Bunun için
+tabloda şu iki alanın SE11'de oluşturulup aktive edilmesi gerekiyor -
+kod bu alanların var olduğu varsayımıyla yazıldı, alanlar eklenmeden
+`get_form_key`'in derlemesi/çalışması etkilenmez ama F4 arama yardımı
+DATA DICTIONARY hatası verir:
+
+| Alan adı | Data Element   | Tip/Uzunluk | Açıklama         |
+|----------|----------------|-------------|------------------|
+| SNAME    | AD_NAMEFIRS    | CHAR 40     | İmzalayan Ad     |
+| SSURN    | AD_NAMELAST    | CHAR 40     | İmzalayan Soyad  |
+
+**Açık nokta:** ZEM_T010'da T.C. Kimlik No (ArkSigner'ın `IDNumber` alanı)
+için de bir kolon yok - `P_SIDNR` şimdilik elle giriliyor, F4'e dahil değil.
+İstenirse aynı mantıkla bir `SIDNR` (CHAR 11) alanı daha eklenip F4'e
+dahil edilebilir.
