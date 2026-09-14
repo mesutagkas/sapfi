@@ -153,28 +153,20 @@ CLASS lcl_report IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    " Tetikleyen alanın kendisini (retfield) elle yazmıyoruz - F4IF_INT_
-    " TABLE_VALUE_REQUEST'in standart davranışı zaten o alanı otomatik
-    " dolduruyor. DYNP_VALUES_UPDATE'i SADECE diğer (tetiklemeyen) alan
-    " için kullanıyoruz - ikisini birden yazmaya çalışmak çakışmaya
-    " sebep oluyor olabilir.
-    IF retfield <> 'FORMN'.
-      dynpfield-fieldname  = 'P_FORMN'.
-      dynpfield-fieldvalue = selected_row-formn.
-      APPEND dynpfield TO dynpfields.
-      CLEAR dynpfield.
-    ENDIF.
+    " Test doğruladı: DYNP_VALUES_UPDATE ile elle yazdığımız alan HER ZAMAN
+    " doluyor; F4'ün "tetikleyen alanı kendiliğinden doldurma" standart
+    " davranışı ise bu (class method içinden çağrılan) senaryoda ÇALIŞMIYOR.
+    " Bu yüzden retfield ayrımı yapmadan HER İKİ alanı da her zaman elle
+    " yazıyoruz - tetikleyen alan dahil.
+    dynpfield-fieldname  = 'P_FORMN'.
+    dynpfield-fieldvalue = selected_row-formn.
+    APPEND dynpfield TO dynpfields.
+    CLEAR dynpfield.
 
-    IF retfield <> 'EMAIL'.
-      dynpfield-fieldname  = 'P_SEMAIL'.
-      dynpfield-fieldvalue = selected_row-email.
-      APPEND dynpfield TO dynpfields.
-      CLEAR dynpfield.
-    ENDIF.
-
-    IF dynpfields IS INITIAL.
-      RETURN.
-    ENDIF.
+    dynpfield-fieldname  = 'P_SEMAIL'.
+    dynpfield-fieldvalue = selected_row-email.
+    APPEND dynpfield TO dynpfields.
+    CLEAR dynpfield.
 
     CALL FUNCTION 'DYNP_VALUES_UPDATE'
       EXPORTING
