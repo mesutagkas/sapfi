@@ -98,48 +98,34 @@ CLASS lcl_report IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD f4_help_for_form.
-    DATA search_help_list TYPE ty_t_form_search_help.
-    DATA return_tab       TYPE STANDARD TABLE OF ddshretval.
-    DATA return_line      LIKE LINE OF return_tab.
-    DATA field_mapping    TYPE STANDARD TABLE OF dselc.
-    DATA mapping_line     LIKE LINE OF field_mapping.
-    DATA dynpfields       TYPE STANDARD TABLE OF dynpread.
-    DATA dynpfield        LIKE LINE OF dynpfields.
-
     " Not: ZEM_T010'da SNAME/SSURN alanları henüz eklenmedi (bkz.
     " zem_p022_text_symbols.md). Bu iki alan SE11'de oluşturulunca hem
     " ty_form_search_help'e (zem_p022_001) hem SELECT listesine hem de
-    " aşağıdaki mapping'e geri eklenmeli.
+    " aşağıdaki DYNP_VALUES_UPDATE bloğuna geri eklenmeli.
+    DATA search_help_list TYPE ty_t_form_search_help.
+    DATA selected_row     TYPE ty_form_search_help.
+    DATA return_tab       TYPE STANDARD TABLE OF ddshretval.
+    DATA return_line      LIKE LINE OF return_tab.
+    DATA dynpfields       TYPE STANDARD TABLE OF dynpread.
+    DATA dynpfield        LIKE LINE OF dynpfields.
+
     SELECT formn accno email
       INTO CORRESPONDING FIELDS OF TABLE search_help_list
       FROM zem_t010
       ORDER BY formn.
 
-    " DYNPFLD_MAPPING: value_tab'daki her sütunun hangi ekran alanına
-    " yazılacağını FM'e söylüyor - kullanıcı hangi satırı seçerse seçsin,
-    " bu alanlar BİRLİKTE dolar (F4'ü hangi alandan açtığından bağımsız).
-    mapping_line-fldname   = 'FORMN'.
-    mapping_line-dyfldname = 'P_FORMN'.
-    APPEND mapping_line TO field_mapping.
-
-    mapping_line-fldname   = 'EMAIL'.
-    mapping_line-dyfldname = 'P_SEMAIL'.
-    APPEND mapping_line TO field_mapping.
-
-    " DYNPPROG/DYNPNR: DYNPFLD_MAPPING'in hangi ekrana yazacağını bilmesi
-    " için gerekli - bunlar olmadan mapping hiçbir alana yazamaz (P_FORMN
-    " dahil), çünkü DYNPFLD_MAPPING verildiğinde FM'in "tetiklenen alanı
-    " otomatik doldur" varsayılan davranışı devre dışı kalır.
+    " DYNPFLD_MAPPING kullanmıyoruz - bazı sistemlerde ekranı otomatik
+    " güncellemiyor. Bunun yerine: F4'ten sadece seçilen TEK alanın
+    " (retfield) değerini alıyoruz, o satırı search_help_list içinde
+    " kendimiz buluyoruz, sonra TÜM alanları kendimiz DYNP_VALUES_UPDATE
+    " ile yazıyoruz.
     CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
       EXPORTING
         retfield        = retfield
         value_org       = 'S'
-        dynpprog        = sy-repid
-        dynpnr          = sy-dynnr
       TABLES
         value_tab       = search_help_list
         return_tab      = return_tab
-        dynpfld_mapping = field_mapping
       EXCEPTIONS
         parameter_error = 1
         no_values_found = 2
@@ -149,25 +135,39 @@ CLASS lcl_report IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    " DYNPFLD_MAPPING bazı sistemlerde ekranı otomatik güncellemeyebiliyor -
-    " garantiye almak için RETURN_TAB'daki (DYNPFLD_MAPPING sayesinde artık
-    " P_FORMN/P_SEMAIL için de dolu gelen) değerleri DYNP_VALUES_UPDATE ile
-    " elle de ekrana yazıyoruz.
-    LOOP AT return_tab INTO return_line.
-      CLEAR dynpfield.
-      dynpfield-fieldname  = return_line-fieldname.
-      dynpfield-fieldvalue = return_line-fieldval.
-      APPEND dynpfield TO dynpfields.
-    ENDLOOP.
-
-    IF dynpfields IS NOT INITIAL.
-      CALL FUNCTION 'DYNP_VALUES_UPDATE'
-        EXPORTING
-          dyname     = sy-repid
-          dynumb     = sy-dynnr
-        TABLES
-          dynpfields = dynpfields.
+    READ TABLE return_tab INTO return_line INDEX 1.
+    IF sy-subrc <> 0.
+      RETURN.
     ENDIF.
+
+    CASE retfield.
+      WHEN 'EMAIL'.
+        READ TABLE search_help_list INTO selected_row
+          WITH KEY email = return_line-fieldval.
+      WHEN OTHERS.
+        READ TABLE search_help_list INTO selected_row
+          WITH KEY formn = return_line-fieldval.
+    ENDCASE.
+
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+    dynpfield-fieldname  = 'P_FORMN'.
+    dynpfield-fieldvalue = selected_row-formn.
+    APPEND dynpfield TO dynpfields.
+    CLEAR dynpfield.
+
+    dynpfield-fieldname  = 'P_SEMAIL'.
+    dynpfield-fieldvalue = selected_row-email.
+    APPEND dynpfield TO dynpfields.
+
+    CALL FUNCTION 'DYNP_VALUES_UPDATE'
+      EXPORTING
+        dyname     = sy-repid
+        dynumb     = sy-dynnr
+      TABLES
+        dynpfields = dynpfields.
   ENDMETHOD.
 
   METHOD prepare_data.
