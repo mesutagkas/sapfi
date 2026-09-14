@@ -153,14 +153,28 @@ CLASS lcl_report IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    dynpfield-fieldname  = 'P_FORMN'.
-    dynpfield-fieldvalue = selected_row-formn.
-    APPEND dynpfield TO dynpfields.
-    CLEAR dynpfield.
+    " Tetikleyen alanın kendisini (retfield) elle yazmıyoruz - F4IF_INT_
+    " TABLE_VALUE_REQUEST'in standart davranışı zaten o alanı otomatik
+    " dolduruyor. DYNP_VALUES_UPDATE'i SADECE diğer (tetiklemeyen) alan
+    " için kullanıyoruz - ikisini birden yazmaya çalışmak çakışmaya
+    " sebep oluyor olabilir.
+    IF retfield <> 'FORMN'.
+      dynpfield-fieldname  = 'P_FORMN'.
+      dynpfield-fieldvalue = selected_row-formn.
+      APPEND dynpfield TO dynpfields.
+      CLEAR dynpfield.
+    ENDIF.
 
-    dynpfield-fieldname  = 'P_SEMAIL'.
-    dynpfield-fieldvalue = selected_row-email.
-    APPEND dynpfield TO dynpfields.
+    IF retfield <> 'EMAIL'.
+      dynpfield-fieldname  = 'P_SEMAIL'.
+      dynpfield-fieldvalue = selected_row-email.
+      APPEND dynpfield TO dynpfields.
+      CLEAR dynpfield.
+    ENDIF.
+
+    IF dynpfields IS INITIAL.
+      RETURN.
+    ENDIF.
 
     CALL FUNCTION 'DYNP_VALUES_UPDATE'
       EXPORTING
