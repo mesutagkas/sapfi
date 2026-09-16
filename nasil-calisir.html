@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nasıl çalışır — Depar</title>
+<meta name="description" content="Ürün seç, mağazana aktar, sipariş gelsin. Depar'da stoksuz satışın tüm akışı tek sayfada.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/depar.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav__in">
+    <a class="logo" href="index.html"><img class="logo__mark" src="assets/img/logo-mark.svg" alt=""><span>depar</span></a>
+    <nav class="nav__links">
+      <a href="nasil-calisir.html">Nasıl çalışır</a>
+      <a href="tedarikci.html">Tedarikçiler</a>
+      <a href="fiyatlandirma.html">Fiyatlar</a>
+      <a href="panel.html">Panel demo</a>
+    </nav>
+    <div class="nav__cta">
+      <a class="btn btn--ghost btn--sm" href="giris.html">Giriş yap</a>
+      <a class="btn btn--primary btn--sm" href="giris.html#kayit">Ücretsiz başla</a>
+      <button class="nav__burger" aria-label="Menü" aria-expanded="false"><span></span></button>
+    </div>
+  </div>
+</header>
+
+<!-- başlık -->
+<section class="section section--tight">
+  <div class="wrap center">
+    <span class="eyebrow">Akışın tamamı</span>
+    <h1 class="h-xxl mt-16">Ürün onların.<br>Vitrin senin.</h1>
+    <p class="lead mt-16 mx-auto maxw-44">Tek şema: tedarikçiden alıcıya kadar her adım.</p>
+  </div>
+</section>
+
+<!-- büyük şema -->
+<section class="section--tight">
+  <div class="wrap">
+    <div class="card card--pad-lg rv">
+      <div class="flowmap">
+        <div class="flowmap__node">
+          <div class="ico mx-auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></div>
+          <div class="h-s mt-16">Tedarikçi</div>
+          <div class="tiny muted">Ürün · stok · fiyat</div>
+        </div>
+        <div class="flowmap__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="flowmap__node" style="border-color:#2F6BFF;box-shadow:0 20px 50px -28px rgba(47,107,255,.8)">
+          <div class="ico ico--mint mx-auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.66 0l3-3A4 4 0 0 0 13 5.34l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3A4 4 0 0 0 11 18.66l1.5-1.5"/></svg></div>
+          <div class="h-s mt-16">Depar</div>
+          <div class="tiny muted">Eşleştirme · senkron · sipariş yönetimi</div>
+        </div>
+        <div class="flowmap__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="flowmap__node">
+          <div class="ico ico--amber mx-auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16v11H4z"/><path d="M3 9l1.5-5h15L21 9a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z"/></svg></div>
+          <div class="h-s mt-16">Satıcı mağazası</div>
+          <div class="tiny muted">Trendyol · Hepsiburada · N11</div>
+        </div>
+      </div>
+      <hr class="mt-32">
+      <div class="grid g3 mt-32">
+        <div class="row" style="align-items:flex-start;gap:12px">
+          <div class="ico ico--sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14-4.5L4 9"/><path d="M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5L20 15"/><path d="M20 19v-4h-4"/></svg></div>
+          <div><div class="h-s">Stok tek yönlü akar</div><div class="small muted">Tedarikçi → mağaza, dakikalar içinde.</div></div>
+        </div>
+        <div class="row" style="align-items:flex-start;gap:12px">
+          <div class="ico ico--sm ico--mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/></svg></div>
+          <div><div class="h-s">Sipariş ters yönde</div><div class="small muted">Mağaza → Depar → tedarikçi.</div></div>
+        </div>
+        <div class="row" style="align-items:flex-start;gap:12px">
+          <div class="ico ico--sm ico--amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M3 7a2 2 0 0 1 2-2h12v2"/><circle cx="17" cy="13" r="1.3"/></svg></div>
+          <div><div class="h-s">Para satıcıda toplanır</div><div class="small muted">Tedarikçi bedeli cariden düşer.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- rol bazlı -->
+<section class="section">
+  <div class="wrap">
+    <div class="sec-head center rv">
+      <span class="eyebrow">İki taraf</span>
+      <h2 class="h-xl">Kim ne yapıyor?</h2>
+    </div>
+    <div class="vs">
+      <div class="vs__col rv">
+        <span class="badge badge--brand">Satıcı</span>
+        <h3 class="h-l mt-16">Sen sadece satarsın</h3>
+        <ul class="stack mt-24">
+          <li class="bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Mağaza API'ni bağlarsın</li>
+          <li class="bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Katalogdan ürün seçersin</li>
+          <li class="bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Fiyatını sen belirlersin</li>
+          <li class="bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Alıcıya faturayı sen kesersin</li>
+        </ul>
+      </div>
+      <div class="vs__col rv">
+        <span class="badge badge--mint">Tedarikçi</span>
+        <h3 class="h-l mt-16">O sadece gönderir</h3>
+        <ul class="stack mt-24">
+          <li class="bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Ürün ve stoğu yükler</li>
+          <li class="bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Siparişi hazırlar</li>
+          <li class="bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Alıcı adresine kargolar</li>
+          <li class="bullet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Satıcıya fatura keser</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- para akışı -->
+<section class="section section--soft">
+  <div class="wrap">
+    <div class="grid g2" style="gap:52px;align-items:center">
+      <div class="rv">
+        <span class="eyebrow">Para akışı</span>
+        <h2 class="h-xl mt-16">Kâr, satıştan önce belli.</h2>
+        <p class="lead mt-16 maxw-44">Panel komisyonu, kargoyu ve KDV'yi düşer; net kârı ürün kartında gösterir.</p>
+        <div class="row wrapf mt-24">
+          <span class="badge badge--mint"><span class="dot"></span> Zarar edecek fiyata kilit</span>
+          <span class="badge badge--brand"><span class="dot"></span> Otomatik fiyat kuralı</span>
+        </div>
+      </div>
+      <div class="card card--pad-lg rv">
+        <div class="row-between"><span class="h-s">Örnek sipariş</span><span class="badge">Kablosuz Kulaklık Pro</span></div>
+        <hr class="mt-16">
+        <div class="row-between mt-16"><span class="muted small">Satış fiyatın</span><span class="bold">₺749,00</span></div>
+        <div class="row-between mt-8"><span class="muted small">Pazaryeri komisyonu (%15)</span><span class="bold" style="color:var(--danger)">− ₺112,35</span></div>
+        <div class="row-between mt-8"><span class="muted small">Kargo</span><span class="bold" style="color:var(--danger)">− ₺44,90</span></div>
+        <div class="row-between mt-8"><span class="muted small">Tedarikçi bedeli</span><span class="bold" style="color:var(--danger)">− ₺410,00</span></div>
+        <hr class="mt-16">
+        <div class="row-between mt-16">
+          <span class="h-s">Net kârın</span>
+          <span class="h-l" style="color:#0FBF95">₺181,75</span>
+        </div>
+        <div class="tiny muted mt-8">KDV hariç gösterim. Oranlar kategoriye göre panelde otomatik güncellenir.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- kurulum adımları -->
+<section class="section">
+  <div class="wrap">
+    <div class="sec-head center rv">
+      <span class="eyebrow">Kurulum</span>
+      <h2 class="h-xl">5 dakika, 4 adım.</h2>
+    </div>
+    <div class="grid g4">
+      <div class="card card--hover rv"><div class="step__n">1</div><h3 class="h-s">Hesap aç</h3><p class="small muted mt-8">E-posta ve vergi bilgisi.</p></div>
+      <div class="card card--hover rv"><div class="step__n" style="background:var(--brand)">2</div><h3 class="h-s">API anahtarını gir</h3><p class="small muted mt-8">Pazaryeri panelinden kopyala-yapıştır.</p></div>
+      <div class="card card--hover rv"><div class="step__n" style="background:var(--mint)">3</div><h3 class="h-s">Ürün seç</h3><p class="small muted mt-8">Filtrele, kârı gör, aktar.</p></div>
+      <div class="card card--hover rv"><div class="step__n" style="background:var(--amber)">4</div><h3 class="h-s">Sat</h3><p class="small muted mt-8">Siparişler panele düşsün.</p></div>
+    </div>
+    <div class="center mt-48">
+      <a class="btn btn--primary btn--lg" href="giris.html#kayit">Hemen kur</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__grid">
+      <div>
+        <a class="logo logo--light" href="index.html"><img class="logo__mark" src="assets/img/logo-mark.svg" alt=""><span>depar</span></a>
+        <p class="small mt-16 maxw-44">Stoksuz satışta tedarikçiyle satıcıyı tek panelde buluşturur.</p>
+      </div>
+      <div><h4>Ürün</h4><ul class="stack"><li><a href="nasil-calisir.html">Nasıl çalışır</a></li><li><a href="fiyatlandirma.html">Fiyatlandırma</a></li><li><a href="panel.html">Panel demo</a></li></ul></div>
+      <div><h4>Tedarikçi</h4><ul class="stack"><li><a href="tedarikci.html">Neden Depar</a></li><li><a href="tedarikci.html#yukleme">Ürün yükleme</a></li><li><a href="giris.html#kayit">Başvuru</a></li></ul></div>
+      <div><h4>Kurumsal</h4><ul class="stack"><li><a href="index.html#fiyat">Abonelik</a></li><li><a href="giris.html">Giriş</a></li><li><a href="mailto:destek@depar.com.tr">destek@depar.com.tr</a></li></ul></div>
+    </div>
+    <div class="footer__bottom"><span>© 2026 Depar Teknoloji A.Ş.</span><span>KVKK · Kullanım Koşulları · Mesafeli Satış</span></div>
+  </div>
+</footer>
+
+<script src="assets/js/depar.js"></script>
+</body>
+</html>

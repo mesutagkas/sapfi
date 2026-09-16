@@ -1,0 +1,519 @@
+/* ============================================================
+   DEPAR — Stoksuz satış platformu
+   Tasarım sistemi / tek CSS dosyası
+   ============================================================ */
+
+/* ---------- 1. Tokenlar ---------- */
+:root{
+  --ink:#0A1733;
+  --ink-2:#122349;
+  --ink-3:#1B3164;
+
+  --bg:#FFFFFF;
+  --bg-soft:#F6F8FD;
+  --bg-soft-2:#ECF2FC;
+
+  --text:#0C1A33;
+  --muted:#5D6D89;
+  --line:#E2E9F4;
+
+  --brand:#2F6BFF;
+  --brand-600:#1D50D8;
+  --brand-50:#EAF1FF;
+
+  --mint:#0FBF95;
+  --mint-50:#E4F9F3;
+
+  --amber:#FFB020;
+  --amber-50:#FFF5E2;
+
+  --danger:#EF4E3A;
+
+  --r-sm:10px;
+  --r:16px;
+  --r-lg:24px;
+  --r-xl:32px;
+
+  --sh-s:0 1px 2px rgba(10,23,51,.05), 0 6px 16px rgba(10,23,51,.06);
+  --sh-m:0 10px 30px -10px rgba(10,23,51,.18);
+  --sh-l:0 36px 80px -30px rgba(10,23,51,.35);
+
+  --maxw:1180px;
+  --nav-h:72px;
+
+  --grad:linear-gradient(135deg,#2F6BFF 0%,#5B8BFF 45%,#0FBF95 100%);
+  --grad-soft:linear-gradient(135deg,#EAF1FF 0%,#E4F9F3 100%);
+}
+
+/* ---------- 2. Reset ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:90px}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img,svg{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0;line-height:1.14;letter-spacing:-.024em;font-weight:800}
+p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+hr{border:0;border-top:1px solid var(--line);margin:0}
+::selection{background:#2F6BFF;color:#fff}
+
+/* ---------- 3. Yerleşim ---------- */
+.wrap{width:100%;max-width:var(--maxw);margin-inline:auto;padding-inline:20px}
+.section{padding:88px 0}
+.section--tight{padding:60px 0}
+.section--soft{background:var(--bg-soft)}
+.section--ink{background:var(--ink);color:#fff}
+.section--ink .muted{color:#9DB2D6}
+.grid{display:grid;gap:22px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.center{text-align:center}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;align-items:center;gap:12px}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.wrapf{flex-wrap:wrap}
+
+/* ---------- 4. Tipografi ---------- */
+.h-xxl{font-size:clamp(2.4rem,5.4vw,4.1rem);font-weight:850;letter-spacing:-.035em}
+.h-xl{font-size:clamp(2rem,3.9vw,3rem)}
+.h-l{font-size:clamp(1.5rem,2.5vw,2.1rem)}
+.h-m{font-size:1.22rem}
+.h-s{font-size:1.02rem;font-weight:700;letter-spacing:-.01em}
+.lead{font-size:clamp(1.04rem,1.6vw,1.22rem);color:var(--muted);line-height:1.55}
+.muted{color:var(--muted)}
+.tiny{font-size:.82rem}
+.small{font-size:.92rem}
+.bold{font-weight:700}
+.gradtext{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.underline-mark{position:relative;white-space:nowrap}
+.underline-mark::after{
+  content:"";position:absolute;left:0;right:0;bottom:.04em;height:.36em;
+  background:linear-gradient(90deg,rgba(15,191,149,.30),rgba(47,107,255,.28));
+  border-radius:6px;z-index:-1;
+}
+
+/* ---------- 5. Etiketler / rozetler ---------- */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:.78rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--brand);background:var(--brand-50);
+  padding:7px 14px;border-radius:999px;
+}
+.section--ink .eyebrow{color:#9FC0FF;background:rgba(47,107,255,.16)}
+.badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 11px;border-radius:999px;font-size:.78rem;font-weight:700;
+  background:var(--bg-soft-2);color:var(--muted);
+}
+.badge--mint{background:var(--mint-50);color:#068a6b}
+.badge--amber{background:var(--amber-50);color:#9a6a00}
+.badge--brand{background:var(--brand-50);color:var(--brand-600)}
+.badge--danger{background:#FEECE9;color:#c0341f}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ---------- 6. Butonlar ---------- */
+.btn{
+  --bh:48px;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  height:var(--bh);padding:0 22px;border-radius:12px;border:1px solid transparent;
+  font-weight:700;font-size:.97rem;letter-spacing:-.01em;cursor:pointer;
+  transition:transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+  white-space:nowrap;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
+.btn--primary{background:var(--brand);color:#fff;box-shadow:0 10px 24px -10px rgba(47,107,255,.85)}
+.btn--primary:hover{background:var(--brand-600);box-shadow:0 16px 30px -12px rgba(47,107,255,.9)}
+.btn--mint{background:var(--mint);color:#fff;box-shadow:0 10px 24px -10px rgba(15,191,149,.8)}
+.btn--ghost{background:#fff;color:var(--text);border-color:var(--line);box-shadow:var(--sh-s)}
+.btn--ghost:hover{border-color:#c9d7ee}
+.btn--line{background:transparent;color:var(--text);border-color:var(--line)}
+.btn--dark{background:var(--ink);color:#fff}
+.btn--white{background:#fff;color:var(--ink)}
+.btn--lg{--bh:56px;padding:0 28px;font-size:1.02rem;border-radius:14px}
+.btn--sm{--bh:38px;padding:0 14px;font-size:.87rem;border-radius:10px}
+.btn--block{width:100%}
+.section--ink .btn--line,.cta-band .btn--line,.auth__side .btn--line{color:#fff;border-color:rgba(255,255,255,.22)}
+.cta-band .btn--line:hover,.section--ink .btn--line:hover{border-color:rgba(255,255,255,.5)}
+
+/* ---------- 7. Kartlar ---------- */
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:26px;box-shadow:var(--sh-s);
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.card--hover:hover{transform:translateY(-5px);box-shadow:var(--sh-m);border-color:#cfdcf4}
+.card--pad-lg{padding:34px}
+.card--flat{box-shadow:none}
+.card--soft{background:var(--bg-soft);border-color:transparent}
+.card--ink{background:var(--ink-2);border-color:rgba(255,255,255,.08);color:#fff}
+.card--glass{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#fff;backdrop-filter:blur(8px)}
+
+.ico{
+  width:50px;height:50px;border-radius:15px;display:grid;place-items:center;flex:none;
+  background:var(--brand-50);color:var(--brand);
+}
+.ico--mint{background:var(--mint-50);color:#0a9a77}
+.ico--amber{background:var(--amber-50);color:#b07400}
+.ico--ink{background:rgba(255,255,255,.1);color:#fff}
+.ico svg{width:24px;height:24px}
+.ico--sm{width:38px;height:38px;border-radius:11px}
+.ico--sm svg{width:19px;height:19px}
+
+/* ---------- 8. Üst menü ---------- */
+.nav{
+  position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);
+  backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid transparent;
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+.nav.is-stuck{border-bottom-color:var(--line);box-shadow:0 6px 24px -18px rgba(10,23,51,.6)}
+.nav__in{height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;gap:18px}
+.nav__links{display:flex;align-items:center;gap:4px}
+.nav__links a{
+  padding:9px 14px;border-radius:10px;font-size:.95rem;font-weight:600;color:#3D4D6B;
+  transition:background .15s ease,color .15s ease;
+}
+.nav__links a:hover{background:var(--bg-soft-2);color:var(--text)}
+.nav__links a.is-active{color:var(--brand);background:var(--brand-50)}
+.nav__cta{display:flex;align-items:center;gap:10px}
+.nav__burger{
+  display:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);
+  background:#fff;place-items:center;cursor:pointer;
+}
+.nav__burger span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px;position:relative}
+.nav__burger span::before,.nav__burger span::after{
+  content:"";position:absolute;left:0;width:18px;height:2px;background:var(--text);border-radius:2px;
+}
+.nav__burger span::before{top:-6px}
+.nav__burger span::after{top:6px}
+
+/* logo */
+.logo{display:inline-flex;align-items:center;gap:10px;font-weight:850;letter-spacing:-.045em;font-size:1.34rem}
+.logo__mark{width:36px;height:36px;flex:none}
+.logo--light{color:#fff}
+
+/* ---------- 9. Hero ---------- */
+.hero{position:relative;padding:74px 0 86px;overflow:hidden}
+.hero::before{
+  content:"";position:absolute;inset:-260px 0 auto -10%;height:760px;z-index:-2;
+  background:
+    radial-gradient(640px 360px at 18% 34%,rgba(47,107,255,.16),transparent 62%),
+    radial-gradient(560px 340px at 82% 20%,rgba(15,191,149,.16),transparent 60%);
+}
+.hero__grid{
+  display:grid;grid-template-columns:1.02fr .98fr;gap:52px;align-items:center;
+}
+.hero h1{margin-bottom:18px}
+.hero .lead{max-width:34ch}
+.hero__cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.hero__note{display:flex;gap:18px;flex-wrap:wrap;margin-top:18px;color:var(--muted);font-size:.88rem}
+.hero__note span{display:inline-flex;align-items:center;gap:7px}
+
+.dotgrid{
+  position:absolute;inset:0;z-index:-1;opacity:.5;
+  background-image:radial-gradient(rgba(10,23,51,.10) 1px,transparent 1px);
+  background-size:26px 26px;
+  mask-image:radial-gradient(circle at 50% 40%,#000,transparent 72%);
+}
+
+/* ---------- 10. İstatistik şeridi ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line)}
+.stat{background:#fff;padding:26px 22px;text-align:center}
+.stat b{display:block;font-size:clamp(1.6rem,3vw,2.2rem);letter-spacing:-.03em;line-height:1.1}
+.stat span{color:var(--muted);font-size:.88rem}
+
+/* ---------- 11. Akış / adımlar ---------- */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;position:relative}
+.step{position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:28px;box-shadow:var(--sh-s)}
+.step__n{
+  width:40px;height:40px;border-radius:13px;display:grid;place-items:center;
+  font-weight:800;color:#fff;background:var(--ink);margin-bottom:18px;
+}
+.step:nth-child(2) .step__n{background:var(--brand)}
+.step:nth-child(3) .step__n{background:var(--mint)}
+.step__art{margin:18px -6px -6px;border-radius:var(--r);overflow:hidden}
+
+/* ---------- 12. Pazaryeri rozetleri ---------- */
+.channels{display:flex;flex-wrap:wrap;gap:10px}
+.chan{
+  display:inline-flex;align-items:center;gap:9px;padding:10px 16px;border-radius:12px;
+  background:#fff;border:1px solid var(--line);font-weight:700;font-size:.93rem;box-shadow:var(--sh-s);
+}
+.chan i{width:10px;height:10px;border-radius:3px;display:block}
+.chan--ty i{background:#F27A1A}
+.chan--hb i{background:#FF6000}
+.chan--n11 i{background:#7B3FA0}
+.chan--ptt i{background:#E0242B}
+.chan--cs i{background:#E5326F}
+.chan--am i{background:#FF9900}
+.chan--pz i{background:#5A31F4}
+.chan--soon{opacity:.62}
+.section--ink .chan{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+
+/* ---------- 13. Özellik ızgarası ---------- */
+.feat{display:flex;flex-direction:column;gap:14px;height:100%}
+.feat p{color:var(--muted);font-size:.96rem}
+.bullet{display:flex;gap:11px;align-items:flex-start;font-size:.96rem}
+.bullet svg{width:20px;height:20px;flex:none;margin-top:2px;color:var(--mint)}
+.bullet--x svg{color:#C3CEE2}
+
+/* ---------- 14. Karşılaştırma ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.vs__col{border-radius:var(--r-lg);padding:28px;border:1px solid var(--line);background:#fff}
+.vs__col--bad{background:var(--bg-soft);border-style:dashed}
+.vs__col--good{border-color:rgba(47,107,255,.35);box-shadow:0 20px 50px -28px rgba(47,107,255,.65)}
+
+/* ---------- 15. Fiyatlandırma ---------- */
+.toggle{
+  display:inline-flex;padding:5px;background:var(--bg-soft-2);border-radius:999px;gap:4px;
+}
+.toggle button{
+  border:0;background:transparent;padding:10px 20px;border-radius:999px;font-weight:700;font-size:.92rem;
+  cursor:pointer;color:var(--muted);transition:all .18s ease;
+}
+.toggle button.is-on{background:#fff;color:var(--text);box-shadow:var(--sh-s)}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:start}
+.plan{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-xl);padding:30px;
+  display:flex;flex-direction:column;gap:18px;box-shadow:var(--sh-s);position:relative;
+}
+.plan--pop{
+  border-color:transparent;background:var(--ink);color:#fff;
+  box-shadow:var(--sh-l);transform:translateY(-10px);
+}
+.plan--pop .muted,.plan--pop .price__per{color:#9DB2D6}
+.plan--pop .bullet svg{color:#4FE3BE}
+.plan__tag{position:absolute;top:-13px;left:30px}
+.price{display:flex;align-items:baseline;gap:6px}
+.price b{font-size:2.5rem;letter-spacing:-.04em;line-height:1}
+.price__per{color:var(--muted);font-size:.92rem}
+.plan ul{display:flex;flex-direction:column;gap:11px}
+.plan hr{border-color:rgba(10,23,51,.08)}
+.plan--pop hr{border-color:rgba(255,255,255,.12)}
+
+/* tablo */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:#fff}
+table.tbl{width:100%;border-collapse:collapse;min-width:640px;font-size:.94rem}
+.tbl th,.tbl td{padding:15px 18px;text-align:left;border-bottom:1px solid var(--line)}
+.tbl thead th{background:var(--bg-soft);font-weight:700;font-size:.86rem;letter-spacing:.02em;color:var(--muted);white-space:nowrap}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl td.num{font-variant-numeric:tabular-nums}
+.tbl .yes{color:var(--mint);font-weight:800}
+.tbl .no{color:#C3CEE2;font-weight:800}
+
+/* ---------- 16. SSS ---------- */
+.faq{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:#fff}
+.faq__item+.faq__item{border-top:1px solid var(--line)}
+.faq__q{
+  width:100%;text-align:left;background:none;border:0;padding:20px 24px;cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;font-weight:700;font-size:1rem;
+}
+.faq__q:hover{background:var(--bg-soft)}
+.faq__q svg{width:20px;height:20px;flex:none;color:var(--muted);transition:transform .22s ease}
+.faq__item.is-open .faq__q svg{transform:rotate(45deg)}
+.faq__a{max-height:0;overflow:hidden;transition:max-height .28s ease}
+.faq__a p{padding:0 24px 22px;color:var(--muted)}
+.faq__item.is-open .faq__a{max-height:320px}
+
+/* ---------- 17. CTA bandı ---------- */
+.cta-band{
+  position:relative;border-radius:var(--r-xl);padding:56px;overflow:hidden;
+  background:var(--ink);color:#fff;
+}
+.cta-band::after{
+  content:"";position:absolute;inset:auto -80px -180px auto;width:520px;height:520px;border-radius:50%;
+  background:radial-gradient(circle,rgba(47,107,255,.5),transparent 62%);
+}
+.cta-band::before{
+  content:"";position:absolute;inset:-160px auto auto -120px;width:460px;height:460px;border-radius:50%;
+  background:radial-gradient(circle,rgba(15,191,149,.35),transparent 62%);
+}
+.cta-band > *{position:relative;z-index:1}
+
+/* ---------- 18. Footer ---------- */
+.footer{background:var(--ink);color:#C6D4EC;padding:64px 0 28px}
+.footer a{color:#C6D4EC;font-size:.94rem}
+.footer a:hover{color:#fff}
+.footer h4{color:#fff;font-size:.86rem;letter-spacing:.11em;text-transform:uppercase;margin-bottom:16px}
+.footer__grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:34px}
+.footer__bottom{
+  margin-top:44px;padding-top:22px;border-top:1px solid rgba(255,255,255,.1);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.86rem;color:#8FA3C6;
+}
+
+/* ---------- 19. Panel demo ---------- */
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh;background:var(--bg-soft)}
+.side{background:var(--ink);color:#C6D4EC;padding:22px 16px;display:flex;flex-direction:column;gap:26px;position:sticky;top:0;height:100vh}
+.side__nav{display:flex;flex-direction:column;gap:3px}
+.side__nav a{
+  display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;font-size:.94rem;font-weight:600;
+}
+.side__nav a svg{width:19px;height:19px;opacity:.85}
+.side__nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+.side__nav a.is-active{background:var(--brand);color:#fff}
+.side__foot{margin-top:auto;font-size:.82rem;color:#8FA3C6}
+.topbar{
+  background:#fff;border-bottom:1px solid var(--line);padding:14px 26px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:20;
+}
+.main{padding:26px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.kpi__card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.kpi__card b{display:block;font-size:1.7rem;letter-spacing:-.03em;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.trend{font-size:.82rem;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.trend--up{color:#0a9a77}
+.trend--down{color:var(--danger)}
+.panelbox{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.panelbox__h{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.prodcard{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+.prodcard__img{aspect-ratio:4/3;background:var(--bg-soft-2);display:grid;place-items:center}
+.prodcard__b{padding:14px;display:flex;flex-direction:column;gap:9px;flex:1}
+.tabs{display:flex;gap:6px;background:var(--bg-soft-2);padding:5px;border-radius:12px}
+.tabs button{border:0;background:transparent;padding:8px 15px;border-radius:9px;font-weight:700;font-size:.88rem;cursor:pointer;color:var(--muted)}
+.tabs button.is-on{background:#fff;color:var(--text);box-shadow:var(--sh-s)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--grad);display:grid;place-items:center;color:#fff;font-weight:800;font-size:.86rem;flex:none}
+.searchbox{
+  display:flex;align-items:center;gap:9px;background:var(--bg-soft);border:1px solid var(--line);
+  border-radius:11px;padding:0 13px;height:40px;min-width:240px;
+}
+.searchbox input{border:0;background:none;outline:none;width:100%;font-size:.92rem}
+.searchbox svg{width:17px;height:17px;color:var(--muted);flex:none}
+
+/* ---------- 20. Formlar ---------- */
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:.88rem;font-weight:700}
+.field input,.field select{
+  height:48px;border:1px solid var(--line);border-radius:12px;padding:0 14px;background:#fff;outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.field input:focus,.field select:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(47,107,255,.14)}
+.auth{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+.auth__side{background:var(--ink);color:#fff;padding:48px;display:flex;flex-direction:column;gap:32px;position:relative;overflow:hidden}
+.auth__side::after{
+  content:"";position:absolute;inset:auto -120px -220px auto;width:560px;height:560px;border-radius:50%;
+  background:radial-gradient(circle,rgba(47,107,255,.45),transparent 62%);
+}
+.auth__form{display:flex;align-items:center;justify-content:center;padding:48px 24px}
+.auth__form-in{width:100%;max-width:410px}
+.segment{display:flex;gap:10px}
+.segment label{
+  flex:1;border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;display:flex;gap:11px;align-items:center;
+  transition:border-color .15s ease,background .15s ease;
+}
+.segment input{display:none}
+.segment input:checked + .segment__b{color:var(--brand)}
+.segment label:has(input:checked){border-color:var(--brand);background:var(--brand-50)}
+
+/* ---------- 21. Yardımcılar ---------- */
+.mt-0{margin-top:0}.mt-8{margin-top:8px}.mt-16{margin-top:16px}.mt-24{margin-top:24px}
+.mt-32{margin-top:32px}.mt-48{margin-top:48px}.mb-16{margin-bottom:16px}.mb-24{margin-bottom:24px}
+.mb-32{margin-bottom:32px}.mb-48{margin-bottom:48px}
+.maxw-56{max-width:56ch}.maxw-44{max-width:44ch}.mx-auto{margin-inline:auto}
+.hide{display:none}
+.sec-head{display:flex;flex-direction:column;gap:14px;margin-bottom:44px}
+.sec-head.center{align-items:center;text-align:center}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.rv.is-in{opacity:1;transform:none}
+
+/* ---------- 22. Duyarlı ---------- */
+@media (max-width:1040px){
+  .hero__grid{grid-template-columns:1fr;gap:38px}
+  .hero .lead{max-width:56ch}
+  .footer__grid{grid-template-columns:1fr 1fr;gap:28px}
+  .plans{grid-template-columns:1fr;max-width:460px;margin-inline:auto}
+  .plan--pop{transform:none}
+  .kpi{grid-template-columns:repeat(2,1fr)}
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+}
+@media (max-width:860px){
+  .nav__links,.nav__cta .btn--ghost{display:none}
+  .nav__burger{display:grid}
+  .nav.is-open .nav__links{
+    display:flex;position:absolute;top:var(--nav-h);left:0;right:0;flex-direction:column;align-items:stretch;
+    background:#fff;padding:14px;gap:4px;border-bottom:1px solid var(--line);box-shadow:var(--sh-m);
+  }
+  .g2,.g3,.g4,.steps,.vs,.stats{grid-template-columns:1fr}
+  .stats{border-radius:var(--r)}
+  .section{padding:64px 0}
+  .cta-band{padding:36px 24px}
+  .auth{grid-template-columns:1fr}
+  .auth__side{display:none}
+  .kpi{grid-template-columns:1fr}
+  .g4.chan-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .rv{opacity:1;transform:none}
+}
+@media print{.nav,.footer{display:none}}
+
+/* ---------- 23. Sahne / mockup bileşenleri ---------- */
+.scene{position:relative}
+.scene__main{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-l);
+  padding:18px;display:flex;flex-direction:column;gap:14px;
+}
+.scene__bar{display:flex;align-items:center;gap:7px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.scene__bar i{width:9px;height:9px;border-radius:50%;background:#E2E9F4;display:block}
+.pitem{display:flex;gap:13px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+.pitem__img{width:56px;height:56px;border-radius:12px;background:var(--grad-soft);display:grid;place-items:center;flex:none}
+.pitem__img svg{width:26px;height:26px;color:var(--brand)}
+.mini{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:.88rem;font-weight:700}
+.mini__l{display:flex;align-items:center;gap:9px}
+.mini i{width:9px;height:9px;border-radius:3px;display:block;flex:none}
+.flowline{display:grid;place-items:center;color:#B9C7DF;padding:2px 0}
+.flowline svg{width:22px;height:22px}
+.notif{
+  position:absolute;right:-16px;bottom:-26px;width:290px;background:#fff;border:1px solid var(--line);
+  border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh-l);display:flex;gap:12px;align-items:flex-start;
+  animation:floaty 5s ease-in-out infinite;
+}
+.notif--tl{right:auto;bottom:auto;left:-26px;top:-24px;width:250px;animation-delay:-2.5s}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@media (max-width:1040px){.notif{position:static;width:auto;animation:none;margin-top:14px}}
+
+.flowmap{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:16px;align-items:center}
+.flowmap__node{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px;text-align:center;box-shadow:var(--sh-s)}
+.section--ink .flowmap__node{background:var(--ink-2);border-color:rgba(255,255,255,.1);color:#fff}
+.flowmap__arrow{color:#B9C7DF}
+.flowmap__arrow svg{width:26px;height:26px}
+.section--ink .flowmap__arrow{color:#4B6491}
+@media (max-width:860px){
+  .flowmap{grid-template-columns:1fr}
+  .flowmap__arrow{transform:rotate(90deg)}
+}
+
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl{display:grid;grid-template-columns:44px 1fr;gap:16px;padding-bottom:26px;position:relative}
+.tl:last-child{padding-bottom:0}
+.tl::before{content:"";position:absolute;left:21px;top:44px;bottom:0;width:2px;background:rgba(255,255,255,.12)}
+.tl:last-child::before{display:none}
+.tl__d{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.08);color:#fff}
+.tl__d svg{width:20px;height:20px}
+.tl__d--on{background:var(--brand)}
+.tl__d--ok{background:var(--mint)}
+
+.bars{display:flex;align-items:flex-end;gap:7px;height:96px}
+.bars i{flex:1;background:var(--brand-50);border-radius:6px 6px 3px 3px;display:block}
+.bars i:nth-child(n+5){background:var(--brand)}
+.bars i:last-child{background:var(--mint)}
+
+/* grafik kutusu yüksekliği */
+.panelbox--chart{display:flex;flex-direction:column}
+.panelbox--chart .panelbox__body{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:20px}
+.panelbox--chart .bars{flex:1;min-height:96px;height:auto}

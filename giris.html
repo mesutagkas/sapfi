@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Giriş / Kayıt — Depar</title>
+<meta name="description" content="Depar'a giriş yap veya 14 gün ücretsiz hesabını aç.">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/depar.css">
+</head>
+<body>
+
+<div class="auth">
+  <!-- sol taraf -->
+  <aside class="auth__side">
+    <a class="logo logo--light" href="index.html" style="position:relative;z-index:1"><img class="logo__mark" src="assets/img/logo-mark.svg" alt=""><span>depar</span></a>
+    <div style="position:relative;z-index:1;margin-top:auto">
+      <h2 class="h-xl">Stok tutma.<br>Kargolama.<br>Sadece sat.</h2>
+      <p class="lead mt-16 maxw-44" style="color:#C6D4EC">14 gün ücretsiz. Kart istemiyoruz.</p>
+      <ul class="stack mt-32">
+        <li class="bullet" style="color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="#4FE3BE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> 18.000+ hazır ürün</li>
+        <li class="bullet" style="color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="#4FE3BE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Trendyol · Hepsiburada · N11</li>
+        <li class="bullet" style="color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="#4FE3BE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Satıştan %0 komisyon</li>
+      </ul>
+    </div>
+    <div class="tiny" style="position:relative;z-index:1;color:#8FA3C6">© 2026 Depar Teknoloji A.Ş.</div>
+  </aside>
+
+  <!-- form -->
+  <main class="auth__form">
+    <div class="auth__form-in">
+      <div class="tabs mb-32" data-tabs="auth">
+        <button class="is-on" data-tab="giris" style="flex:1">Giriş yap</button>
+        <button data-tab="kayit" style="flex:1">Hesap aç</button>
+      </div>
+
+      <!-- GİRİŞ -->
+      <section data-panel="auth" data-key="giris">
+        <h1 class="h-l">Tekrar hoş geldin</h1>
+        <p class="muted small mt-8 mb-24">Panelden kaldığın yerden devam et.</p>
+        <form class="stack" data-demo>
+          <div class="field"><label for="e1">E-posta</label><input id="e1" type="email" placeholder="ornek@sirket.com" required></div>
+          <div class="field"><label for="p1">Şifre</label><input id="p1" type="password" placeholder="••••••••" required></div>
+          <div class="row-between">
+            <label class="row tiny" style="gap:7px"><input type="checkbox" checked> Beni hatırla</label>
+            <a class="tiny bold" style="color:var(--brand)" href="#">Şifremi unuttum</a>
+          </div>
+          <button class="btn btn--primary btn--block btn--lg mt-8" type="submit">Giriş yap</button>
+        </form>
+        <p class="center small muted mt-24">Hesabın yok mu? <a class="bold" style="color:var(--brand)" href="#kayit" onclick="document.querySelector('[data-tab=kayit]').click()">Ücretsiz aç</a></p>
+      </section>
+
+      <!-- KAYIT -->
+      <section data-panel="auth" data-key="kayit" class="hide" id="kayit">
+        <h1 class="h-l">14 gün ücretsiz</h1>
+        <p class="muted small mt-8 mb-24">Kart bilgisi istemiyoruz, istediğin an bırak.</p>
+
+        <div class="segment mb-24">
+          <label>
+            <input type="radio" name="rol" value="satici" checked>
+            <span class="ico ico--sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16v11H4z"/><path d="M3 9l1.5-5h15L21 9a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z"/></svg></span>
+            <span class="segment__b"><span class="h-s">Satıcıyım</span><br><span class="tiny muted">Pazaryerinde satarım</span></span>
+          </label>
+          <label>
+            <input type="radio" name="rol" value="tedarikci">
+            <span class="ico ico--sm ico--mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>
+            <span class="segment__b"><span class="h-s">Tedarikçiyim</span><br><span class="tiny muted">Ürün sağlarım</span></span>
+          </label>
+        </div>
+
+        <form class="stack" data-demo>
+          <div class="grid g2" style="gap:12px">
+            <div class="field"><label for="ad">Ad soyad</label><input id="ad" type="text" placeholder="Markus Yılmaz" required></div>
+            <div class="field"><label for="tel">Telefon</label><input id="tel" type="tel" placeholder="05xx xxx xx xx" required></div>
+          </div>
+          <div class="field"><label for="firma">Firma ünvanı</label><input id="firma" type="text" placeholder="Örnek Ticaret Ltd. Şti." required></div>
+          <div class="field"><label for="e2">E-posta</label><input id="e2" type="email" placeholder="ornek@sirket.com" required></div>
+          <div class="field"><label for="p2">Şifre</label><input id="p2" type="password" placeholder="En az 8 karakter" minlength="8" required></div>
+          <label class="row tiny mt-8" style="gap:8px;align-items:flex-start">
+            <input type="checkbox" required style="margin-top:3px">
+            <span class="muted">Kullanım koşullarını ve KVKK aydınlatma metnini okudum, onaylıyorum.</span>
+          </label>
+          <button class="btn btn--primary btn--block btn--lg mt-8" type="submit">Ücretsiz hesabımı aç</button>
+        </form>
+        <p class="center small muted mt-24">Zaten üye misin? <a class="bold" style="color:var(--brand)" href="#" onclick="document.querySelector('[data-tab=giris]').click();return false">Giriş yap</a></p>
+      </section>
+
+      <p class="center tiny muted mt-32"><a href="index.html">← Siteye dön</a></p>
+    </div>
+  </main>
+</div>
+
+<script src="assets/js/depar.js"></script>
+<script>
+  if (location.hash === "#kayit") {
+    var b = document.querySelector('[data-tab="kayit"]');
+    if (b) b.click();
+  }
+</script>
+</body>
+</html>
