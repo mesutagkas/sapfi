@@ -11,15 +11,16 @@ INITIALIZATION.
 AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_formn.
   report->f4_help_for_form( retfield = 'FORMN' ).
 
-AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_semail.
-  report->f4_help_for_form( retfield = 'EMAIL' ).
+" İmzacı (dış kullanıcı) bilgisi artık KNVK (PAFKT=99) + ADR6'dan geliyor -
+" hangi alandan F4 açılırsa açılsın aynı liste, üç alan birlikte dolar.
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_sname.
+  report->f4_help_for_signer( retfield = 'NAMEV' ).
 
-" P_SNAME/P_SSURN için F4, ZEM_T010'a SNAME/SSURN alanları eklenince
-" (bkz. zem_p022_text_symbols.md) buraya geri eklenmeli:
-" AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_sname.
-"   report->f4_help_for_form( retfield = 'SNAME' ).
-" AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_ssurn.
-"   report->f4_help_for_form( retfield = 'SSURN' ).
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_ssurn.
+  report->f4_help_for_signer( retfield = 'NAME1' ).
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_semail.
+  report->f4_help_for_signer( retfield = 'EMAIL' ).
 
 START-OF-SELECTION.
   report->prepare_data( ).

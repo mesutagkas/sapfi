@@ -11,13 +11,17 @@ CLASS lcl_report DEFINITION.
       initialization,
       prepare_data,
 
-      " P_FORMN/P_SNAME/P_SSURN/P_SEMAIL alanlarının HERHANGİ BİRİNDEN
-      " tetiklenebilen F4 (arama yardımı): ZEM_T010'daki onaycı kayıtlarını
-      " listeler, seçilen satırın form no/ad/soyad/e-posta bilgisini
-      " ekrandaki DÖRT alana birden yazar. retfield sadece hangi sütunun
-      " öncelikli/varsayılan olacağını belirtir, dolan alanları etkilemez.
+      " P_FORMN için F4 (arama yardımı): ZEM_T010'daki form kayıtlarını
+      " listeler, seçilen form numarasını P_FORMN'a yazar.
       f4_help_for_form
-        IMPORTING retfield TYPE dfies-fieldname DEFAULT 'FORMN'.
+        IMPORTING retfield TYPE dfies-fieldname DEFAULT 'FORMN',
+
+      " P_SNAME/P_SSURN/P_SEMAIL alanlarının HERHANGİ BİRİNDEN tetiklenebilen
+      " F4: müşteri master'ındaki "E Mutabakat Yetkilisi" ilgili kişilerini
+      " (KNVK, PAFKT = 99) ve e-posta adreslerini (ADR6) listeler, seçilen
+      " kişinin ad/soyad/e-posta bilgisini ekrandaki ÜÇ alana birden yazar.
+      f4_help_for_signer
+        IMPORTING retfield TYPE dfies-fieldname DEFAULT 'NAMEV'.
 
   PRIVATE SECTION.
     METHODS:
@@ -98,27 +102,73 @@ CLASS lcl_report IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD f4_help_for_form.
-    " Not: ZEM_T010'da SNAME/SSURN alanları henüz eklenmedi (bkz.
-    " zem_p022_text_symbols.md). Bu iki alan SE11'de oluşturulunca hem
-    " ty_form_search_help'e (zem_p022_001) hem SELECT listesine hem de
-    " aşağıdaki DYNP_VALUES_UPDATE bloğuna geri eklenmeli.
     DATA search_help_list TYPE ty_t_form_search_help.
-    DATA selected_row     TYPE ty_form_search_help.
     DATA return_tab       TYPE STANDARD TABLE OF ddshretval.
     DATA return_line      LIKE LINE OF return_tab.
     DATA dynpfields       TYPE STANDARD TABLE OF dynpread.
     DATA dynpfield        LIKE LINE OF dynpfields.
 
-    SELECT formn accno email
+    SELECT formn accno
       INTO CORRESPONDING FIELDS OF TABLE search_help_list
       FROM zem_t010
       ORDER BY formn.
 
-    " DYNPFLD_MAPPING kullanmıyoruz - bazı sistemlerde ekranı otomatik
-    " güncellemiyor. Bunun yerine: F4'ten sadece seçilen TEK alanın
-    " (retfield) değerini alıyoruz, o satırı search_help_list içinde
-    " kendimiz buluyoruz, sonra TÜM alanları kendimiz DYNP_VALUES_UPDATE
-    " ile yazıyoruz.
+    CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+      EXPORTING
+        retfield        = retfield
+        value_org       = 'S'
+      TABLES
+        value_tab       = search_help_list
+        return_tab      = return_tab
+      EXCEPTIONS
+        parameter_error = 1
+        no_values_found = 2
+        OTHERS          = 3.
+
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+    READ TABLE return_tab INTO return_line INDEX 1.
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+    " Test doğruladı: DYNP_VALUES_UPDATE ile elle yazdığımız alan HER ZAMAN
+    " doluyor; F4'ün "tetikleyen alanı kendiliğinden doldurma" standart
+    " davranışı bu (class method içinden çağrılan) senaryoda ÇALIŞMIYOR.
+    " Bu yüzden tetikleyen alan (P_FORMN) da dahil olmak üzere elle yazıyoruz.
+    dynpfield-fieldname  = 'P_FORMN'.
+    dynpfield-fieldvalue = return_line-fieldval.
+    APPEND dynpfield TO dynpfields.
+
+    CALL FUNCTION 'DYNP_VALUES_UPDATE'
+      EXPORTING
+        dyname     = sy-repid
+        dynumb     = sy-dynnr
+      TABLES
+        dynpfields = dynpfields.
+  ENDMETHOD.
+
+  METHOD f4_help_for_signer.
+    DATA search_help_list TYPE ty_t_signer_search_help.
+    DATA selected_row     TYPE ty_signer_search_help.
+    DATA return_tab       TYPE STANDARD TABLE OF ddshretval.
+    DATA return_line      LIKE LINE OF return_tab.
+    DATA dynpfields       TYPE STANDARD TABLE OF dynpread.
+    DATA dynpfield        LIKE LINE OF dynpfields.
+
+    " KNVK: müşteri master'ındaki ilgili kişiler (contact person).
+    " PAFKT = '99' = "E Mutabakat Yetkilisi" partner fonksiyonu.
+    " ADR6: kişinin e-posta adresi, KNVK-PRSNR = ADR6-PERSNUMBER ile eşleşir.
+    SELECT knvk~kunnr knvk~prsnr knvk~namev knvk~name1
+           adr6~smtp_addr AS email
+      INTO CORRESPONDING FIELDS OF TABLE search_help_list
+      FROM knvk
+      INNER JOIN adr6 ON adr6~persnumber = knvk~prsnr
+      WHERE knvk~pafkt = signer_partner_function
+      ORDER BY knvk~kunnr.
+
     CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
       EXPORTING
         retfield        = retfield
@@ -141,25 +191,28 @@ CLASS lcl_report IMPLEMENTATION.
     ENDIF.
 
     CASE retfield.
+      WHEN 'NAME1'.
+        READ TABLE search_help_list INTO selected_row
+          WITH KEY name1 = return_line-fieldval.
       WHEN 'EMAIL'.
         READ TABLE search_help_list INTO selected_row
           WITH KEY email = return_line-fieldval.
       WHEN OTHERS.
         READ TABLE search_help_list INTO selected_row
-          WITH KEY formn = return_line-fieldval.
+          WITH KEY namev = return_line-fieldval.
     ENDCASE.
 
     IF sy-subrc <> 0.
       RETURN.
     ENDIF.
 
-    " Test doğruladı: DYNP_VALUES_UPDATE ile elle yazdığımız alan HER ZAMAN
-    " doluyor; F4'ün "tetikleyen alanı kendiliğinden doldurma" standart
-    " davranışı ise bu (class method içinden çağrılan) senaryoda ÇALIŞMIYOR.
-    " Bu yüzden retfield ayrımı yapmadan HER İKİ alanı da her zaman elle
-    " yazıyoruz - tetikleyen alan dahil.
-    dynpfield-fieldname  = 'P_FORMN'.
-    dynpfield-fieldvalue = selected_row-formn.
+    dynpfield-fieldname  = 'P_SNAME'.
+    dynpfield-fieldvalue = selected_row-namev.
+    APPEND dynpfield TO dynpfields.
+    CLEAR dynpfield.
+
+    dynpfield-fieldname  = 'P_SSURN'.
+    dynpfield-fieldvalue = selected_row-name1.
     APPEND dynpfield TO dynpfields.
     CLEAR dynpfield.
 

@@ -22,16 +22,25 @@ TYPES: BEGIN OF ty_signer_info,
          email   TYPE string,
        END OF ty_signer_info.
 
-" P_FORMN/P_SEMAIL için F4 (arama yardımı) popup'ında gösterilecek/seçilecek
-" alanlar. ZEM_T010'da şu an sadece FORMN/ACCNO/EMAIL var - SNAME/SSURN
-" (AD_NAMEFIRS/AD_NAMELAST) SE11'de eklenince bu tipe ve ilgili SELECT'e
-" (zem_p022_003, f4_help_for_form) geri eklenmeli.
+" P_FORMN için F4 (arama yardımı) popup'ında gösterilecek/seçilecek alanlar.
 TYPES: BEGIN OF ty_form_search_help,
          formn TYPE zem_de_001,
          accno TYPE zem_de_005,
-         email TYPE ad_smtpadr,
        END OF ty_form_search_help.
 TYPES ty_t_form_search_help TYPE STANDARD TABLE OF ty_form_search_help WITH DEFAULT KEY.
+
+" P_SNAME/P_SSURN/P_SEMAIL için F4 (arama yardımı) popup'ında gösterilecek/
+" seçilecek alanlar. İmzacı (dış kullanıcı) artık ZEM_T010 yerine müşteri
+" master'ındaki "E Mutabakat Yetkilisi" ilgili kişisinden (KNVK, PAFKT = 99)
+" ve onun e-posta adresinden (ADR6, PERSNUMBER = KNVK-PRSNR) okunuyor.
+TYPES: BEGIN OF ty_signer_search_help,
+         kunnr TYPE knvk-kunnr,
+         prsnr TYPE knvk-prsnr,
+         namev TYPE knvk-namev,
+         name1 TYPE knvk-name1,
+         email TYPE adr6-smtp_addr,
+       END OF ty_signer_search_help.
+TYPES ty_t_signer_search_help TYPE STANDARD TABLE OF ty_signer_search_help WITH DEFAULT KEY.
 
 * ---Object References-----------------
 " lcl_report henüz zem_p022_003'te tanımlanmadığı için forward-declare edilir
@@ -56,3 +65,6 @@ CONSTANTS file_type_pdf        TYPE string VALUE '0'.
 CONSTANTS file_name_pdf        TYPE string VALUE 'adobe.pdf'.
 CONSTANTS workflow_order_first     TYPE string VALUE '1'.
 CONSTANTS workflow_task_type_sign  TYPE string VALUE '0'.
+
+" KNVK'da imzacıyı ("E Mutabakat Yetkilisi") işaretleyen partner fonksiyonu
+CONSTANTS signer_partner_function TYPE knvk-pafkt VALUE '99'.

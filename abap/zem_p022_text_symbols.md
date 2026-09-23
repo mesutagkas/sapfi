@@ -38,22 +38,30 @@ yapılmadan ekranda teknik alan adı (P_FORMN, P_SNAME, ...) görünür.
 | P_SEMAIL  | İmzalayan (dış kullanıcı) | İmzalayan - E-posta Adresi                |
 | P_STDBY   | Workflow'u başlatan (SAP tarafı, iç kullanıcı) | Workflow'u Başlatan Kullanıcı E-postası |
 
-## ZEM_T010'a eklenmesi gereken alanlar (kod bunları bekliyor)
+## İmzacı (dış kullanıcı) bilgisinin kaynağı
 
-`P_FORMN` alanına bağladığımız F4 arama yardımı (`f4_help_for_form` metodu,
-`AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_formn`), ZEM_T010'dan seçilen
-kaydın ad/soyad/e-posta bilgisini ekrana otomatik dolduruyor. Bunun için
-tabloda şu iki alanın SE11'de oluşturulup aktive edilmesi gerekiyor -
-kod bu alanların var olduğu varsayımıyla yazıldı, alanlar eklenmeden
-`get_form_key`'in derlemesi/çalışması etkilenmez ama F4 arama yardımı
-DATA DICTIONARY hatası verir:
+`P_SNAME`/`P_SSURN`/`P_SEMAIL` artık `ZEM_T010` değil, müşteri master'ı
+üzerinden geliyor:
 
-| Alan adı | Data Element   | Tip/Uzunluk | Açıklama         |
-|----------|----------------|-------------|------------------|
-| SNAME    | AD_NAMEFIRS    | CHAR 40     | İmzalayan Ad     |
-| SSURN    | AD_NAMELAST    | CHAR 40     | İmzalayan Soyad  |
+- **`KNVK`** (müşteri ilgili kişileri) - `PAFKT = '99'` olan satırlar
+  "E Mutabakat Yetkilisi" partner fonksiyonunu taşıyor (bkz.
+  `signer_partner_function` sabiti, `zem_p022_001.abap`). Bu, projenin en
+  başında bahsedilen "sistemde açtığımız 99 numaralı kod"un karşılığı.
+- **`ADR6`** (e-posta adresleri) - `KNVK-PRSNR = ADR6-PERSNUMBER` ile
+  eşleştirilip e-posta (`SMTP_ADDR`) buradan okunuyor.
+- Kullanılan alanlar: `KNVK-KUNNR` (cari, listede görünür), `KNVK-NAMEV`
+  (Ad → `P_SNAME`), `KNVK-NAME1` (Soyad → `P_SSURN`), `ADR6-SMTP_ADDR`
+  (→ `P_SEMAIL`).
+- Bu arama yardımı **form numarasından bağımsız** - tüm müşterilerin
+  PAFKT=99 ilgili kişilerini listeler, form numarası bir filtre/sütun
+  olarak kullanılmıyor.
+- Metod: `f4_help_for_signer` (`zem_p022_003.abap`), `P_SNAME`/`P_SSURN`/
+  `P_SEMAIL`'in üçünden de tetiklenebiliyor, hangisinden açılırsa açılsın
+  üç alanı birlikte dolduruyor.
 
-**Açık nokta:** ZEM_T010'da T.C. Kimlik No (ArkSigner'ın `IDNumber` alanı)
-için de bir kolon yok - `P_SIDNR` şimdilik elle giriliyor, F4'e dahil değil.
-İstenirse aynı mantıkla bir `SIDNR` (CHAR 11) alanı daha eklenip F4'e
-dahil edilebilir.
+`P_FORMN`'un kendi F4'ü (`f4_help_for_form`) hâlâ `ZEM_T010`'dan geliyor
+ve sadece form numarasını dolduruyor - imzacı bilgisiyle artık bağlantısı yok.
+
+**Açık nokta:** T.C. Kimlik No (ArkSigner'ın `IDNumber` alanı) için ne
+`ZEM_T010`'da ne `KNVK`'da bir kaynak var - `P_SIDNR` hâlâ elle giriliyor,
+F4'e dahil değil.
