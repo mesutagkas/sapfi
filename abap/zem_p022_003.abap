@@ -375,14 +375,32 @@ CLASS lcl_report IMPLEMENTATION.
 
   METHOD generate_pdf_form.
     DATA function_name TYPE rs38l_fnam.
+    DATA outputparams  TYPE sfpoutputparams.
+    DATA docparams     TYPE sfpdocparams.
+    DATA form_output   TYPE fpformoutput.
+    DATA fp_error      TYPE REF TO cx_fp_api.
+    DATA error_text    TYPE string.
+    DATA form_subrc    TYPE sy-subrc.
+    DATA close_subrc   TYPE sy-subrc.
 
-    CALL FUNCTION 'FP_FUNCTION_MODULE_NAME'
-      EXPORTING
-        i_name     = adobe_form_name
-      IMPORTING
-        e_funcname = function_name.
+    " Form adından üretilen fonksiyon modülünün adını al
+    TRY.
+        CALL FUNCTION 'FP_FUNCTION_MODULE_NAME'
+          EXPORTING
+            i_name     = adobe_form_name
+          IMPORTING
+            e_funcname = function_name.
+      CATCH cx_fp_api INTO fp_error.
+        error_text = fp_error->get_text( ).
+        MESSAGE error_text TYPE 'E'.
+    ENDTRY.
 
-    DATA outputparams TYPE sfpoutputparams.
+    " PDF'i xstring olarak üret (nodialog/getpdf) ve aynı zamanda ekranda
+    " önizleme penceresinde göster (preview) - ArkSigner'a göndermeden
+    " önce görsel kontrol yapılabilsin diye.
+    outputparams-nodialog = abap_true.
+    outputparams-getpdf   = abap_true.
+    outputparams-preview  = abap_true.
 
     CALL FUNCTION 'FP_JOB_OPEN'
       CHANGING
@@ -398,44 +416,45 @@ CLASS lcl_report IMPLEMENTATION.
       MESSAGE TEXT-e05 TYPE 'E'.
     ENDIF.
 
-    " Not: function_name runtime'da belirlendiği için (dinamik çağrı),
-    " burada inline DATA(...) bildirimi kullanılamaz - arayüz compile
-    " time'da bilinmiyor. Bu yüzden form_output önceden tanımlanır.
-    DATA form_output TYPE fpformoutput.
-    DATA docparams   TYPE sfpdocparams.
+    docparams-langu = sy-langu.
 
     CALL FUNCTION function_name
       EXPORTING
-        /1bcdwb/docparams = docparams
-        minfo             = minfo
-        senderinfo        = sender_info
-        receiverinfo      = receiver_info
-        rcdt              = recdt
-        change_list       = change_list
-        accno             = accno
-        datum             = sy-datum
-        toplam            = total_amount
-        uzeit             = sy-uzeit
+        /1bcdwb/docparams  = docparams
+        minfo              = minfo
+        senderinfo         = sender_info
+        receiverinfo       = receiver_info
+        rcdt               = recdt
+        change_list        = change_list
+        accno              = accno
+        datum              = sy-datum
+        toplam             = total_amount
+        uzeit              = sy-uzeit
       IMPORTING
         /1bcdwb/formoutput = form_output
       EXCEPTIONS
-        usage_error       = 1
-        system_error      = 2
-        internal_error    = 3
-        OTHERS            = 4.
+        usage_error        = 1
+        system_error       = 2
+        internal_error     = 3
+        OTHERS              = 4.
 
-    IF sy-subrc <> 0.
+    form_subrc = sy-subrc.
+
+    " Form çağrısı hata verse de job her durumda kapatılır
+    CALL FUNCTION 'FP_JOB_CLOSE'
+      EXCEPTIONS
+        usage_error    = 1
+        system_error   = 2
+        internal_error = 3
+        OTHERS         = 4.
+
+    close_subrc = sy-subrc.
+
+    IF form_subrc <> 0.
       MESSAGE TEXT-e06 TYPE 'E'.
     ENDIF.
 
-    CALL FUNCTION 'FP_JOB_CLOSE'
-      EXCEPTIONS
-        usage_error     = 1
-        system_error    = 2
-        internal_error  = 3
-        OTHERS          = 4.
-
-    IF sy-subrc <> 0.
+    IF close_subrc <> 0.
       MESSAGE TEXT-e07 TYPE 'E'.
     ENDIF.
 
