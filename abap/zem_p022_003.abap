@@ -492,6 +492,15 @@ CLASS lcl_report IMPLEMENTATION.
     IF sy-subrc <> 0.
       MESSAGE TEXT-e10 TYPE 'E'.
     ENDIF.
+
+    " ZEM_T_ARKCFG-APP_ID/PASS sabit uzunluklu CHAR; result-app_id/pass ise
+    " proxy'nin STRING tipindeki alanları. CHAR -> STRING aktarımında sona
+    " dolan boşluklar KIRPILMAZ ve STRING'in bir parçası olarak kalır - bu
+    " da XML/JSON'a gönderilen Pass/AppId değerinin sonunda görünmez
+    " boşluklar olmasına, dolayısıyla servisin "kullanıcı validate
+    " edilemedi" demesine yol açar. Burada açıkça kırpıyoruz.
+    CONDENSE result-app_id.
+    CONDENSE result-pass.
   ENDMETHOD.
 
   METHOD send_to_arksigner.
