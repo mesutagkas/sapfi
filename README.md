@@ -13,7 +13,10 @@ Gelir modeli: **satıcıdan aylık abonelik**. Satıştan komisyon alınmaz, ted
 
 ## Hızlı başlangıç
 
-Gerekenler: **Node.js 22+** ve **Docker Desktop** (PostgreSQL + Redis için).
+Gerekenler: **Node.js 22+** ve bir **PostgreSQL** veritabanı.
+En kolayı Docker Desktop (`npm run infra:up` Postgres + Redis + Mailpit'i ayağa kaldırır);
+Docker yoksa yerel kurulum ya da ücretsiz bulut Postgres de olur —
+bkz. [docs/08 §3.5](docs/08-FAZ1-CALISTIRMA.md#35-docker-yoksa-ne-yapacaksın).
 
 ```bash
 npm install          # bağımlılıklar (+ shared ve Prisma client derlenir)

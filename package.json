@@ -25,7 +25,8 @@
     "db:studio": "npm run studio --workspace=@depar/db",
     "infra:up": "docker compose -f docker-compose.dev.yml up -d",
     "infra:down": "docker compose -f docker-compose.dev.yml down",
-    "postinstall": "npm run build --workspace=@depar/shared && npm run generate --workspace=@depar/db && npm run build --workspace=@depar/db"
+    "postinstall": "npm run build --workspace=@depar/shared && npm run generate --workspace=@depar/db && npm run build --workspace=@depar/db",
+    "db:reset": "npm run reset --workspace=@depar/db"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

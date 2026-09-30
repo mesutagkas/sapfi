@@ -107,7 +107,53 @@ npm run test:e2e -w @depar/api    # uçtan uca (Postgres ayakta olmalı)
 
 Tarayıcıda: <http://localhost:3000> → **Ücretsiz başla** → kayıt → panel.
 
-### 3.5 Windows notları
+### 3.5 Docker yoksa ne yapacaksın?
+
+`npm run infra:up` yalnızca Docker Desktop kuruluysa çalışır. Değilse veritabanını başka bir
+yoldan sağlaman gerekir — üç seçenek var:
+
+**A) En hızlı: ücretsiz bulut PostgreSQL (kurulum yok)**
+
+[neon.tech](https://neon.tech) veya [supabase.com](https://supabase.com) üzerinde ücretsiz bir
+proje aç, verdiği bağlantı adresini kopyala ve `.env` içindeki satırı değiştir:
+
+```
+DATABASE_URL=postgresql://kullanici:sifre@ep-xxx.eu-central-1.aws.neon.tech/depar?sslmode=require
+```
+
+**B) PostgreSQL'i Windows'a kur**
+
+```powershell
+winget install PostgreSQL.PostgreSQL.16
+```
+
+Kurulumda belirlediğin `postgres` şifresini `.env` dosyasına yaz ve veritabanını oluştur:
+
+```
+DATABASE_URL=postgresql://postgres:SENIN_SIFREN@localhost:5432/depar?schema=public
+```
+
+```powershell
+& "C:\Program Files\PostgreSQL\16\bin\createdb.exe" -U postgres depar
+```
+
+**C) Docker Desktop kur** → [docker.com](https://www.docker.com/products/docker-desktop/), sonra
+`npm run infra:up` normal çalışır.
+
+> **Redis olmadan da devam edebilirsin.** Redis yalnızca `dev:worker` için gerekli; Faz 1'de
+> kuyruk işlerinin gövdesi zaten boş. API ve web Redis olmadan sorunsuz çalışır — worker'ı
+> Faz 3'e kadar hiç çalıştırmasan da olur.
+
+Veritabanı hazır olduktan sonra:
+
+```powershell
+npm run db:migrate
+npm run db:seed
+npm run dev:api     # ayrı terminal
+npm run dev:web     # ayrı terminal
+```
+
+### 3.6 Windows notları
 
 - Komutları PowerShell veya Git Bash'te çalıştırabilirsin; `npm run setup` ikisinde de çalışır
   (`cp` ve `openssl` gerekmez).
@@ -116,6 +162,13 @@ Tarayıcıda: <http://localhost:3000> → **Ücretsiz başla** → kayıt → pa
   Redis yalnızca worker için gerekir; API ve web onsuz çalışır.
 - Depoyu VS Code'da açtığında üstte "Restricted Mode" uyarısı çıkarsa **Manage → Trust** de,
   yoksa terminal ve eklentiler kısıtlı çalışır.
+- PowerShell `npm.ps1 cannot be loaded ... running scripts is disabled` derse, script çalıştırma
+  izni kapalıdır. Tek seferlik çöz:
+  `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` (onay için `Y`).
+  Şirket politikası buna izin vermiyorsa VS Code'un varsayılan terminalini **Command Prompt**
+  yap (Terminal panelinde `+` yanındaki ok → Select Default Profile).
+- `.env` dosyası **kökte** durur; `packages/db` altındaki Prisma komutları onu
+  `dotenv-cli` ile okur. Ayrı bir `.env` kopyası oluşturma, tek dosya yeter.
 
 ---
 
