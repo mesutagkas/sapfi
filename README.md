@@ -7,55 +7,81 @@ tahsilat satıcıda kalır, tedarikçi bedeli satıcının carisinden düşer.
 
 Gelir modeli: **satıcıdan aylık abonelik**. Satıştan komisyon alınmaz, tedarikçi üyeliği ücretsizdir.
 
+**Durum:** Faz 1 tamam — kayıt, giriş, oturum ve panel çalışıyor. ([yol haritası](docs/00-YOL-HARITASI.md))
+
 ---
 
-## Bu depoda ne var?
-
-### 1) Frontend (hazır, çalışır durumda)
-
-Bağımlılık yok, derleme yok. `index.html` dosyasını tarayıcıda açman yeterli.
-
-| Dosya | İçerik |
-|---|---|
-| `index.html` | Ana sayfa: hero, 3 adım, entegrasyonlar, fayda ızgarası, sipariş akışı, karşılaştırma, fiyat özeti, SSS |
-| `nasil-calisir.html` | Uçtan uca akış şeması, rol dağılımı, kâr/para akışı, kurulum adımları |
-| `tedarikci.html` | Tedarikçi tarafı: kazanç, yükleme yöntemleri, onay süreci, performans puanı |
-| `fiyatlandirma.html` | 3 paket, aylık/yıllık geçiş, detaylı karşılaştırma tablosu, limit aşım ücretleri |
-| `panel.html` | Satıcı **ve** tedarikçi panel demosu (rol değiştirici + sekmeler + demo veri) |
-| `giris.html` | Giriş / kayıt ekranı (satıcı–tedarikçi rol seçimli) |
-| `assets/css/depar.css` | Tek dosya tasarım sistemi (token, bileşen, duyarlı yerleşim) |
-| `assets/js/depar.js` | Menü, sayaç, akordiyon, fiyat değiştirici, panel sekmeleri, demo etkileşimler |
-| `assets/img/` | Logo, logo işareti, favicon (SVG) |
-
-Yerelde sunucuyla bakmak için:
+## Hızlı başlangıç
 
 ```bash
-npx http-server . -p 4000     # ya da: python3 -m http.server 4000
+npm install                 # bağımlılıklar (+ shared ve Prisma client derlenir)
+cp .env.example .env        # sırları üret: openssl rand -hex 48
+npm run infra:up            # PostgreSQL + Redis + Mailpit (Docker)
+npm run db:migrate          # tabloları oluştur
+npm run db:seed             # paketler, kategoriler, demo hesaplar
+
+npm run dev:api             # http://localhost:3001
+npm run dev:web             # http://localhost:3000
+npm run dev:worker          # kuyruk işçileri
 ```
 
-### 2) Backend yol haritası (adım adım dokümanlar)
+Demo hesaplar: `satici@depar.test` · `tedarikci@depar.test` — şifre `Depar1234!`
 
-| Doküman | Ne anlatıyor |
+Ayrıntılı kurulum, API uçları ve teknik kararlar: **[docs/08-FAZ1-CALISTIRMA.md](docs/08-FAZ1-CALISTIRMA.md)**
+
+---
+
+## Depo yapısı
+
+```
+apps/api       NestJS REST API — kimlik doğrulama, çok kiracılılık, firma/panel uçları
+apps/web       Next.js 15 — pazarlama sayfaları, giriş/kayıt, oturumlu panel
+apps/worker    BullMQ işçileri — stok senkronu, sipariş çekme (Faz 3'te dolacak)
+packages/db    Prisma şeması, migration'lar, başlangıç verisi
+packages/shared ortak tipler, sabitler, şifre özetleme
+docs/          ürün ve teknik dokümantasyon
+```
+
+### Komutlar
+
+| Komut | İş |
 |---|---|
-| [`docs/00-YOL-HARITASI.md`](docs/00-YOL-HARITASI.md) | Faz faz plan, ekip, takvim, bütçe, MVP kapsamı |
-| [`docs/01-MIMARI-VE-SUNUCU.md`](docs/01-MIMARI-VE-SUNUCU.md) | Teknoloji seçimi, servisler, sunucu kurulumu, domain/SSL, Docker, CI/CD, izleme, yedek |
-| [`docs/02-VERITABANI.md`](docs/02-VERITABANI.md) | Veri modeli, tablo tablo açıklama, indeks ve ölçekleme kararları |
-| [`docs/schema.sql`](docs/schema.sql) | Çalıştırılabilir PostgreSQL şeması |
-| [`docs/03-PAZARYERI-ENTEGRASYONLARI.md`](docs/03-PAZARYERI-ENTEGRASYONLARI.md) | Trendyol, Hepsiburada, N11 API anahtarları nasıl alınır, hangi uçlar, kuyruk ve hata yönetimi |
-| [`docs/04-ODEME-ABONELIK-FATURA.md`](docs/04-ODEME-ABONELIK-FATURA.md) | iyzico/PayTR abonelik altyapısı, cari hesap, e-fatura, tahsilat akışı |
-| [`docs/05-GUVENLIK-KVKK.md`](docs/05-GUVENLIK-KVKK.md) | API anahtarı şifreleme, yetkilendirme, KVKK, sözleşmeler, denetim izi |
-| [`docs/06-FIYATLANDIRMA-MANTIGI.md`](docs/06-FIYATLANDIRMA-MANTIGI.md) | Abonelik fiyatları neye göre belirlendi, birim maliyet ve marj hesabı |
-| [`docs/07-MARKA-KILAVUZU.md`](docs/07-MARKA-KILAVUZU.md) | İsim gerekçesi, logo, renk paleti, tipografi, dil tonu |
+| `npm run dev:api` / `dev:web` / `dev:worker` | Geliştirme sunucuları |
+| `npm run build` | Tüm paketleri derler (sırayla) |
+| `npm run test -w @depar/api` | Birim testler |
+| `npm run test:e2e -w @depar/api` | Uçtan uca testler (Postgres gerekir) |
+| `npm run db:migrate` / `db:seed` / `db:studio` | Veritabanı işlemleri |
+| `npm run infra:up` / `infra:down` | Yerel Postgres + Redis + Mailpit |
+
+---
+
+## Dokümantasyon
+
+| Doküman | İçerik |
+|---|---|
+| [00 — Yol haritası](docs/00-YOL-HARITASI.md) | Faz planı, ekip, takvim, bütçe |
+| [01 — Mimari ve sunucu](docs/01-MIMARI-VE-SUNUCU.md) | Teknoloji seçimi, kuyruk mimarisi, sunucu kurulumu, CI/CD, izleme |
+| [02 — Veritabanı](docs/02-VERITABANI.md) | Veri modeli ve kararlar · [`schema.sql`](docs/schema.sql) |
+| [03 — Pazaryeri entegrasyonları](docs/03-PAZARYERI-ENTEGRASYONLARI.md) | Trendyol / Hepsiburada / N11 API anahtarları ve akışlar |
+| [04 — Ödeme & abonelik](docs/04-ODEME-ABONELIK-FATURA.md) | iyzico abonelik, cari hesap, fatura |
+| [05 — Güvenlik & KVKK](docs/05-GUVENLIK-KVKK.md) | Anahtar şifreleme, yetki, KVKK, sözleşmeler |
+| [06 — Fiyatlandırma mantığı](docs/06-FIYATLANDIRMA-MANTIGI.md) | Paket fiyatları neye göre belirlendi |
+| [07 — Marka kılavuzu](docs/07-MARKA-KILAVUZU.md) | İsim, logo, renk, tipografi, dil tonu |
+| [08 — Faz 1 çalıştırma](docs/08-FAZ1-CALISTIRMA.md) | Kurulum, API uçları, teknik kararlar |
 
 ---
 
 ## Marka özeti
 
-- **İsim:** Depar — "atağa kalkmak, hızlanmak". Kısa, Türkçe, akılda kalıcı, `.com.tr` ve sosyal medyada tek kelime.
+- **İsim:** Depar — "atağa kalkmak, hızlanmak".
 - **Slogan:** *Stok tutma. Kargolama. Sadece sat.*
-- **Renkler:** Lacivert `#0A1733` (güven) · Kobalt `#2F6BFF` (aksiyon) · Nane `#0FBF95` (kazanç) · Amber `#FFB020` (uyarı)
-- **Logo:** Hız çizgileri + ileri ok — ürünün tedarikçiden vitrine akışı.
+- **Renkler:** Lacivert `#0A1733` · Kobalt `#2F6BFF` · Nane `#0FBF95` · Amber `#FFB020`
+- Tasarım sistemi tek dosyada: `apps/web/app/globals.css`
+
+> Faz 1 öncesindeki statik HTML prototipi `apps/web` içine taşındı; eski dosyalar git geçmişinde
+> (`515766e` işlemesinde) duruyor.
 
 ## Sıradaki adım
 
-`docs/00-YOL-HARITASI.md` dosyasındaki **Faz 0** kontrol listesiyle başla (alan adı, şirket, pazaryeri hesapları, sunucu).
+`docs/08-FAZ1-CALISTIRMA.md` → **§7 Faz 2**: tedarikçi onayı, Excel/XML ile ürün yükleme,
+kategori eşleme, katalog ekranı.

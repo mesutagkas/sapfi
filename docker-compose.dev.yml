@@ -1,0 +1,32 @@
+# Yerel geliştirme altyapısı:  npm run infra:up
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: depar-postgres
+    environment:
+      POSTGRES_USER: depar
+      POSTGRES_PASSWORD: depar
+      POSTGRES_DB: depar
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U depar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: depar-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+
+  mailpit:            # yerelde giden e-postaları görmek icin: http://localhost:8025
+    image: axllent/mailpit
+    container_name: depar-mailpit
+    ports: ["1025:1025", "8025:8025"]
+
+volumes:
+  pgdata: {}
+  redisdata: {}

@@ -1,6 +1,14 @@
 -- ============================================================
--- DEPAR — PostgreSQL 16 şeması
--- Çalıştırma:  psql "$DATABASE_URL" -f docs/schema.sql
+-- DEPAR — PostgreSQL 16 şeması (okunabilir referans)
+--
+-- NOT: Faz 1'den itibaren şemanın TEK KAYNAĞI
+--      packages/db/prisma/schema.prisma dosyasıdır.
+--      Tablolar oradan migration ile üretilir:
+--        npm run db:migrate
+--      Bu dosya modeli SQL olarak okumak/incelemek için tutulur;
+--      değişiklik yaparken ikisini birlikte güncelle.
+--
+-- Doğrudan çalıştırmak istersen:  psql "$DATABASE_URL" -f docs/schema.sql
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";   -- gen_random_uuid()
@@ -58,6 +66,19 @@ CREATE TABLE users (
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX ON users (tenant_id);
+
+-- Refresh token'lar hash'lenerek saklanır: rotasyon ve tek tıkla iptal için.
+CREATE TABLE refresh_tokens (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash text NOT NULL UNIQUE,          -- sha256(token); ham token asla saklanmaz
+  user_agent text,
+  ip         text,
+  expires_at timestamptz NOT NULL,
+  revoked_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ON refresh_tokens (user_id);
 
 CREATE TABLE tenant_documents (           -- vergi levhası, imza sirküleri vb.
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),

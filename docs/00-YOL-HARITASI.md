@@ -42,7 +42,7 @@ Kod yazmadan önce bitmesi gerekenler:
 
 ---
 
-## Faz 1 — Temel iskelet (2.–3. hafta)
+## Faz 1 — Temel iskelet (2.–3. hafta) ✅ TAMAMLANDI
 
 | İş | Detay |
 |---|---|
@@ -53,7 +53,8 @@ Kod yazmadan önce bitmesi gerekenler:
 | Frontend taşıma | Bu depodaki statik sayfalar Next.js bileşenlerine dönüştürülür (CSS aynen kullanılabilir) |
 | Ortamlar | `dev` (lokal Docker), `staging`, `prod` |
 
-**Çıktı:** Kullanıcı kayıt olabiliyor, giriş yapabiliyor, boş panel görüyor.
+**Çıktı:** Kullanıcı kayıt olabiliyor, giriş yapabiliyor, boş panel görüyor. ✅
+Kurulum, API uçları ve verilen teknik kararlar: [`08-FAZ1-CALISTIRMA.md`](08-FAZ1-CALISTIRMA.md)
 
 ---
 

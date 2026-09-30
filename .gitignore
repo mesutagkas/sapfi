@@ -4,5 +4,11 @@ node_modules/
 !.env.example
 .DS_Store
 dist/
+build/
 .next/
+out/
+coverage/
 *.log
+*.tsbuildinfo
+.turbo/
+packages/db/generated/

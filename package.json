@@ -1,0 +1,33 @@
+{
+  "name": "depar",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Depar — stoksuz satış platformu (monorepo)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=@depar/api & npm run dev --workspace=@depar/web",
+    "dev:api": "npm run dev --workspace=@depar/api",
+    "dev:web": "npm run dev --workspace=@depar/web",
+    "dev:worker": "npm run dev --workspace=@depar/worker",
+    "build": "npm run build -w @depar/shared && npm run build -w @depar/db && npm run build -w @depar/api && npm run build -w @depar/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run generate --workspace=@depar/db",
+    "db:migrate": "npm run migrate --workspace=@depar/db",
+    "db:push": "npm run push --workspace=@depar/db",
+    "db:seed": "npm run seed --workspace=@depar/db",
+    "db:studio": "npm run studio --workspace=@depar/db",
+    "infra:up": "docker compose -f docker-compose.dev.yml up -d",
+    "infra:down": "docker compose -f docker-compose.dev.yml down",
+    "postinstall": "npm run build --workspace=@depar/shared && npm run generate --workspace=@depar/db && npm run build --workspace=@depar/db"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
