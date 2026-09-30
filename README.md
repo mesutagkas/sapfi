@@ -13,16 +13,22 @@ Gelir modeli: **satıcıdan aylık abonelik**. Satıştan komisyon alınmaz, ted
 
 ## Hızlı başlangıç
 
-```bash
-npm install                 # bağımlılıklar (+ shared ve Prisma client derlenir)
-cp .env.example .env        # sırları üret: openssl rand -hex 48
-npm run infra:up            # PostgreSQL + Redis + Mailpit (Docker)
-npm run db:migrate          # tabloları oluştur
-npm run db:seed             # paketler, kategoriler, demo hesaplar
+Gerekenler: **Node.js 22+** ve **Docker Desktop** (PostgreSQL + Redis için).
 
-npm run dev:api             # http://localhost:3001
-npm run dev:web             # http://localhost:3000
-npm run dev:worker          # kuyruk işçileri
+```bash
+npm install          # bağımlılıklar (+ shared ve Prisma client derlenir)
+npm run setup        # .env oluşturur, JWT/şifreleme anahtarlarını üretir
+npm run infra:up     # PostgreSQL + Redis + Mailpit
+npm run db:migrate   # tabloları oluştur
+npm run db:seed      # paketler, kategoriler, demo hesaplar
+```
+
+Sonra **üç ayrı terminalde** (aynı terminalde üçünü birden çalıştıramazsın):
+
+```bash
+npm run dev:api      # http://localhost:3001   API
+npm run dev:web      # http://localhost:3000   site + panel  ← tarayıcıda burayı aç
+npm run dev:worker   # kuyruk işçileri
 ```
 
 Demo hesaplar: `satici@depar.test` · `tedarikci@depar.test` — şifre `Depar1234!`

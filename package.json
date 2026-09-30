@@ -11,7 +11,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "npm run dev --workspace=@depar/api & npm run dev --workspace=@depar/web",
+    "setup": "node scripts/setup.mjs",
     "dev:api": "npm run dev --workspace=@depar/api",
     "dev:web": "npm run dev --workspace=@depar/web",
     "dev:worker": "npm run dev --workspace=@depar/worker",

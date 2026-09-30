@@ -52,7 +52,19 @@ depar/
 ## 3. Sıfırdan çalıştırma
 
 ### 3.1 Gereksinimler
-Node.js 22+, Docker (Postgres/Redis için), Git.
+Node.js 22+, Docker Desktop (Postgres/Redis için), Git.
+
+> **"VS Code'da hangi dosyayı çalıştıracağım?"** — Hiçbirini. Bu bir web projesi;
+> çift tıklanacak tek bir dosya yok. VS Code'da **Terminal → New Terminal** (Ctrl+ö / Ctrl+\`)
+> açıp aşağıdaki komutları çalıştırıyorsun. Terminalin proje kökünde olduğundan emin ol
+> (`package.json` dosyasının bulunduğu klasör). Uygulamanın giriş noktaları şunlardır ama
+> bunlar doğrudan değil, npm script'leri üzerinden çalışır:
+>
+> | Servis | Giriş dosyası | Komut |
+> |---|---|---|
+> | API | `apps/api/src/main.ts` | `npm run dev:api` |
+> | Web | `apps/web/app/` (Next.js) | `npm run dev:web` |
+> | Worker | `apps/worker/src/main.ts` | `npm run dev:worker` |
 
 ### 3.2 Adımlar
 
@@ -60,19 +72,17 @@ Node.js 22+, Docker (Postgres/Redis için), Git.
 # 1) Bağımlılıklar (shared + Prisma client otomatik derlenir)
 npm install
 
-# 2) Ortam değişkenleri
-cp .env.example .env
-# JWT_SECRET, JWT_REFRESH_SECRET, ENCRYPTION_KEY üret:
-#   openssl rand -hex 48
+# 2) Ortam değişkenleri — .env oluşturur ve anahtarları üretir
+npm run setup
 
-# 3) Altyapı: PostgreSQL + Redis + Mailpit
+# 3) Altyapı: PostgreSQL + Redis + Mailpit (Docker Desktop açık olmalı)
 npm run infra:up
 
 # 4) Veritabanı şeması ve başlangıç verisi
 npm run db:migrate      # tabloları oluşturur
 npm run db:seed         # paketler, kategoriler, demo hesaplar
 
-# 5) Servisler (üç ayrı terminal)
+# 5) Servisler — ÜÇ AYRI TERMİNALDE, her biri açık kalacak
 npm run dev:api         # http://localhost:3001
 npm run dev:web         # http://localhost:3000
 npm run dev:worker      # kuyrukları dinler
@@ -96,6 +106,16 @@ npm run test:e2e -w @depar/api    # uçtan uca (Postgres ayakta olmalı)
 ```
 
 Tarayıcıda: <http://localhost:3000> → **Ücretsiz başla** → kayıt → panel.
+
+### 3.5 Windows notları
+
+- Komutları PowerShell veya Git Bash'te çalıştırabilirsin; `npm run setup` ikisinde de çalışır
+  (`cp` ve `openssl` gerekmez).
+- Docker Desktop kurulu değilse `npm run infra:up` çalışmaz. Alternatif: PostgreSQL'i Windows'a
+  kurup `.env` içindeki `DATABASE_URL` satırını kendi kullanıcı adı/şifrenle güncelle.
+  Redis yalnızca worker için gerekir; API ve web onsuz çalışır.
+- Depoyu VS Code'da açtığında üstte "Restricted Mode" uyarısı çıkarsa **Manage → Trust** de,
+  yoksa terminal ve eklentiler kısıtlı çalışır.
 
 ---
 
