@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 /**
@@ -9,14 +10,25 @@ import { useEffect } from "react";
  * Bu sayfalar tasarımdan birebir taşındığı için davranış tek yerde, DOM üzerinden
  * yönetiliyor. Durum taşıyan gerçek ürün ekranları (panel, giriş) normal React
  * bileşenleridir — oraya bu dosyadan hiçbir şey dokunmaz.
+ *
+ * ÖNEMLİ: Bu bileşen kök yerleşimde (root layout) yaşar ve sayfalar arası geçişte
+ * yeniden bağlanmaz. Bu yüzden effect `pathname`e bağlıdır — aksi halde ilk yüklemeden
+ * sonraki her sayfada gözlemci hiç kurulmaz ve `.rv` öğeleri `opacity: 0` kalır,
+ * yani içerik kaybolur.
  */
 export default function SiteInteractions() {
+  const pathname = usePathname();
+
   useEffect(() => {
     const cleanups: Array<() => void> = [];
 
     // --- görünüme girince animasyon ---
     const revealables = document.querySelectorAll<HTMLElement>(".rv:not(.is-in)");
-    if (revealables.length) {
+
+    // Gözlemci desteklenmiyorsa içerik gizli kalmasın.
+    if (!("IntersectionObserver" in window)) {
+      revealables.forEach((el) => el.classList.add("is-in"));
+    } else if (revealables.length) {
       const io = new IntersectionObserver(
         (entries) => {
           entries.forEach((e) => {
@@ -101,7 +113,7 @@ export default function SiteInteractions() {
     cleanups.push(() => document.removeEventListener("click", onPrice));
 
     return () => cleanups.forEach((fn) => fn());
-  }, []);
+  }, [pathname]);
 
   return null;
 }
