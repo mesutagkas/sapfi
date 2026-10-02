@@ -1,0 +1,9 @@
+{
+  "name": "sapfi-akvaryum",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sapfi Akvaryum tanıtım ve blog sayfası",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

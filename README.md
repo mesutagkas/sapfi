@@ -36,4 +36,15 @@ Derleme veya kurulum gerekmez; dosyaları herhangi bir statik hostinge yüklemen
 **GitHub Pages:** Repo → *Settings* → *Pages* → *Branch* olarak `main` ve `/ (root)` seçin.
 Netlify, Vercel veya klasik bir hosting (cPanel `public_html`) da kullanılabilir.
 
-Yerelde denemek için `index.html` dosyasını tarayıcıda açmanız yeterli.
+## Yerelde çalıştırma
+
+[Node.js](https://nodejs.org) kurulu olmalıdır (ek paket kurmaya gerek yok):
+
+```bash
+npm start
+```
+
+Tarayıcıda **http://localhost:3000** adresini açın. Durdurmak için terminalde `Ctrl + C`.
+
+Node.js yoksa `python -m http.server 3000` komutu da aynı işi görür
+ya da `index.html` dosyasını doğrudan tarayıcıda açabilirsiniz.
