@@ -1,0 +1,691 @@
+method find_other_acc_no.
+* Types
+*-------------------------------------------------------------------*
+* *- Manuel muhasebeleşen kayıtların ACDOCA kontrolü
+* *- added by <kullanıcı> DD.MM.YYYY HH:MM:SS
+*-------------------------------------------------------------------*
+  types: begin of ty_acdoca,
+           rbukrs type acdoca-rbukrs,
+           gjahr  type acdoca-gjahr,
+           belnr  type acdoca-belnr,
+           racct  type acdoca-racct,
+           budat  type acdoca-budat,
+           tsl    type acdoca-tsl,
+           rtcur  type acdoca-rtcur,
+           kunnr  type acdoca-kunnr,
+           lifnr  type acdoca-lifnr,
+*-------------------------------------------------------------------*
+* *- EHO'dan atılan belgeyi tanımak için belge türü ve referans (BKPF)
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+           blart  type bkpf-blart,
+           xblnr  type bkpf-xblnr,
+*-------------------------------------------------------------------*
+         end of ty_acdoca,
+         begin of ty_acdoca_kun,
+           rbukrs type acdoca-rbukrs,
+           gjahr  type acdoca-gjahr,
+           belnr  type acdoca-belnr,
+           kunnr  type acdoca-kunnr,
+           lifnr  type acdoca-lifnr,
+         end of ty_acdoca_kun.
+*-------------------------------------------------------------------*
+
+*-------------------------------------------------------------------*
+* *- EHO'dan atılan belgeyi tanımak için BKPF referans tipi
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+  types: begin of ty_bkpf_ref,
+           bukrs type bkpf-bukrs,
+           belnr type bkpf-belnr,
+           gjahr type bkpf-gjahr,
+           blart type bkpf-blart,
+           xblnr type bkpf-xblnr,
+         end of ty_bkpf_ref.
+*-------------------------------------------------------------------*
+
+  types: begin of ty_tckn,
+           taxnum type dfkkbptaxnum-taxnum,
+         end of ty_tckn,
+         begin of ty_tckn_vend,
+           taxnum type dfkkbptaxnum-taxnum,
+           vendor type cvi_vend_link-vendor,
+         end of ty_tckn_vend.
+
+  data: lt_tckn      type sorted table of ty_tckn with unique key taxnum,
+        lt_tckn_vend type sorted table of ty_tckn_vend with non-unique key taxnum,
+        lv_tckn      type dfkkbptaxnum-taxnum.
+
+* Fıeld-Symbls
+  field-symbols:
+    <fs_out>    type zeho_s004,
+    <fs_kna1_x> type ty_kna1_x,
+    <fs_lfa1_x> type ty_lfa1_x,
+    <fs_acdoca> type ty_acdoca.
+
+* Structures
+  data: ls_t005       type zeho_t005,
+        ls_t007       type zeho_t007,
+        ls_t006       type zeho_t006,
+        ls_t002       type zeho_t002,
+        ls_t004       type zeho_t004,
+        ls_t018       type zeho_t018,
+        ls_message    type symsg,
+        ls_t024       like line of mt_t024,       " YENİ (IBAN bloğundan taşındı)
+        ls_acdoca     type ty_acdoca,
+        ls_acdoca_kun type ty_acdoca_kun.
+
+* Tables
+  data: lt_t005       type standard table of zeho_t005,
+        lt_t006       type standard table of zeho_t006,
+        lt_t007       type standard table of zeho_t007,
+        lt_t002       type standard table of zeho_t002,
+        lt_t004       type standard table of zeho_t004,
+        lt_t003       type standard table of zeho_t003,
+        lt_t018       type standard table of zeho_t018,
+        lt_t019       type standard table of zeho_t019,
+        lt_t028       type standard table of zeho_t028,
+        lt_kna1       type sorted table of kna1 with unique key kunnr,
+        lt_knb1       type sorted table of knb1 with unique key kunnr bukrs,
+        lt_lfa1       type sorted table of lfa1 with unique key lifnr,
+        lt_lfb1       type sorted table of lfb1 with unique key lifnr bukrs,
+        lt_kna1_x     type sorted table of ty_kna1_x with unique key kunnr,
+        lt_lfa1_x     type sorted table of ty_lfa1_x with unique key lifnr,
+        lt_knbk       type zeho_tt011,
+        lt_lfbk       type zeho_tt012,
+        lt_tiban      type zeho_tt009,
+        lt_out_ref1   type zeho_tt004,
+        lt_out_ref2   type zeho_tt004,
+        lt_acdoca     type standard table of ty_acdoca,
+        lt_acdoca_kun type standard table of ty_acdoca_kun.
+
+* Variables
+  data: lv_subrc       type sy-subrc,
+        lv_butxt       type zeho_s004-butxt,
+        lv_index       type sy-fdpos,
+        lv_index_dschr type i,
+        lv_tabix       type sy-tabix,
+        lv_tsl         type acdoca-tsl,
+        lv_found       type abap_bool,
+        lv_tckn_count  type i,
+        lv_count       type i.
+
+
+  constants: return_keyword    type string value 'iade',
+             return_keyword_tr type string value 'İADE'.
+  data: is_return      type abap_bool,
+        is_customer_mv type abap_bool.
+
+*-------------------------------------------------------------------*
+* *- EHO'dan atılan belgeyi tanımak için değişkenler
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+  data: lt_bkpf_ref  type sorted table of ty_bkpf_ref with unique key bukrs belnr gjahr,
+        ls_bkpf_ref  type ty_bkpf_ref,
+        lv_xblnr_eho type bkpf-xblnr,
+        lv_first_idx type sy-tabix.
+*-------------------------------------------------------------------*
+
+****************************************-- OPEN --*********************************************
+******************************-- UYARLAMADAN DAN CARİ/HESAP ARAMA  --**************************
+
+  if ct_out is not initial.
+    free mt_t024.
+    select * from zeho_t024
+      into corresponding fields of table mt_t024.       "#EC CI_NOWHERE
+
+*-- Şirket parametreleri
+    free lt_t028 .
+    select * from zeho_t028 into table lt_t028 .
+
+*-- Şirketler arası para transferi ise 102 ye karşı çalışcak 102 yi bul...
+    free lt_t002.
+    select * from zeho_t002 into table lt_t002.         "#EC CI_NOWHERE
+
+*-- Banka ya Tanımlı İşlem kodları bulunması
+    free lt_t004.
+    select * from zeho_t004 into table lt_t004
+    for all entries in ct_out
+    where bankc = ct_out-bankc
+    and   vgext = ct_out-vgext.
+
+*-- Banka ya karşı çalışacak hesap ı bul banka hesap eşleşmesi.
+    free lt_t005.
+    select * from zeho_t005 into table lt_t005
+    for all entries in ct_out
+    where bankc = ct_out-bankc
+    and   bukrs = ct_out-bukrs
+    and   hbkid = ct_out-hbkid
+    and   hktid = ct_out-hktid
+    and   vgint = ct_out-vgint.
+
+*-- Banka ya karşı çalışacak hesap ı bul cari bazlı hesap eşleşmesi.
+    free lt_t006.
+    select * from zeho_t006 into table lt_t006
+    for all entries in ct_out
+    where bankc = ct_out-bankc
+    and   bukrs = ct_out-bukrs
+    and   vgint = ct_out-vgint.
+
+*-- Bankaya karşı çalışacak hesabı bul istisna tablosu
+    free lt_t007.
+    select * from zeho_t007 into table lt_t007
+    for all entries in ct_out
+    where bankc = ct_out-bankc
+    and   bukrs = ct_out-bukrs
+    and   vgint = ct_out-vgint.
+
+*-- Aktif carileri bul
+    free lt_t018.
+    select * from zeho_t018 into table lt_t018
+    for all entries in ct_out
+    where bankc = ct_out-bankc
+    and   bukrs = ct_out-bukrs
+    and   vgint = ct_out-vgint.
+
+    free lt_t019.
+    select * from zeho_t019 into table lt_t019
+    for all entries in ct_out
+    where iban  = ct_out-iban.
+
+*-------------------------------------------------------------------*
+* *- Manuel muhasebeleşen kayıtlar için ACDOCA okunuyor
+* *- added by <kullanıcı> DD.MM.YYYY HH:MM:SS
+*-------------------------------------------------------------------*
+    free: lt_acdoca, lt_acdoca_kun.
+
+*-- Banka satırları
+    select rbukrs gjahr belnr racct budat tsl rtcur
+      from acdoca
+      into corresponding fields of table lt_acdoca
+      for all entries in ct_out
+      where rldnr      = '0L'
+        and rbukrs     = ct_out-bukrs
+        and racct      = ct_out-hkont
+        and budat      = ct_out-prdat
+        and xreversing = space
+        and xreversed  = space.
+
+    if lt_acdoca is not initial.
+*-- Aynı belgelerin müşteri satırları
+      select rbukrs gjahr belnr kunnr lifnr
+        from acdoca
+        into table lt_acdoca_kun
+        for all entries in lt_acdoca
+        where rldnr  = '0L'
+          and rbukrs = lt_acdoca-rbukrs
+          and gjahr  = lt_acdoca-gjahr
+          and belnr  = lt_acdoca-belnr
+           and ( kunnr <> space or lifnr <> space ).
+      sort lt_acdoca_kun by rbukrs gjahr belnr.
+
+*-------------------------------------------------------------------*
+* *- EHO'dan atılan belgeyi tanımak için BKPF referansı
+* *- (ACDOCA'da XBLNR / TCODE yok, BKPF'ten okunuyor)
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+      free lt_bkpf_ref.
+      select bukrs belnr gjahr blart xblnr
+        from bkpf
+        into table lt_bkpf_ref
+        for all entries in lt_acdoca
+        where bukrs = lt_acdoca-rbukrs
+          and belnr = lt_acdoca-belnr
+          and gjahr = lt_acdoca-gjahr.
+*-------------------------------------------------------------------*
+
+*-- Müşteri / satıcıyı banka satırına taşı
+      loop at lt_acdoca assigning <fs_acdoca>.
+        read table lt_acdoca_kun into ls_acdoca_kun
+             with key rbukrs = <fs_acdoca>-rbukrs
+                      gjahr  = <fs_acdoca>-gjahr
+                      belnr  = <fs_acdoca>-belnr
+             binary search.
+        if sy-subrc = 0.
+          <fs_acdoca>-kunnr = ls_acdoca_kun-kunnr.
+          <fs_acdoca>-lifnr = ls_acdoca_kun-lifnr.
+        endif.
+
+*-------------------------------------------------------------------*
+* *- Belge türü ve referansı banka satırına taşınıyor
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+        read table lt_bkpf_ref into ls_bkpf_ref
+             with table key bukrs = <fs_acdoca>-rbukrs
+                            belnr = <fs_acdoca>-belnr
+                            gjahr = <fs_acdoca>-gjahr.
+        if sy-subrc = 0.
+          <fs_acdoca>-blart = ls_bkpf_ref-blart.
+          <fs_acdoca>-xblnr = ls_bkpf_ref-xblnr.
+        endif.
+*-------------------------------------------------------------------*
+      endloop.
+
+      sort lt_acdoca by rbukrs racct budat tsl rtcur.
+    endif.
+
+*    -------------------------------------------------------------------*
+* *- İcra ödemeleri: metindeki TC kimlik no ile personel satıcısı bulunuyor
+* *- added by <kullanıcı> DD.MM.YYYY HH:MM:SS
+*-------------------------------------------------------------------*magkas
+*    loop at ct_out assigning <fs_out> where manuel = abap_false.
+*      clear lv_tckn.
+*      find first occurrence of regex 'K[İI]ML[İI]K\D*(\d{10,11})'
+*           in <fs_out>-butxt                   " kalem metni alanı
+*           submatches lv_tckn.
+*      if sy-subrc = 0.
+*        insert value #( taxnum = lv_tckn ) into table lt_tckn.
+*      endif.
+*    endloop.
+*
+*    if lt_tckn is not initial.
+*      select t~taxnum, l~vendor
+*        from dfkkbptaxnum as t
+*        inner join but000        as b on b~partner      = t~partner
+*        inner join cvi_vend_link as l on l~partner_guid = b~partner_guid
+*        for all entries in @lt_tckn
+*        where t~taxnum = @lt_tckn-taxnum
+*        into table @lt_tckn_vend.
+*    endif.
+*-------------------------------------------------------------------*
+
+    loop at ct_out assigning <fs_out> where ( statu  = cv_01
+                                        or    statu  = cv_02
+                                        or    statu  = cv_03
+                                        or    statu  = cv_04 )
+*                                        OR    statu  = cv_06 )
+                                        and   manuel = abap_false.
+
+      if <fs_out>-belnr is not initial.
+*-- Muhasebeleşmiş ama statüsü güncellenmemiş
+        <fs_out>-statu = cv_05.
+
+
+      else.
+*-- Şirket kodunda karşı hesap arama etkin ??
+        data: ls_t028 like line of lt_t028.
+        read table lt_t028 into ls_t028 with key bukrs = <fs_out>-bukrs .
+
+        if sy-subrc eq 0 and ls_t028-faccn eq 'X' .
+
+          clear: <fs_out>-blart,
+                 <fs_out>-bschl,
+                 <fs_out>-saknr,
+                 <fs_out>-kunnr,
+                 <fs_out>-lifnr,
+                 <fs_out>-kostl,
+                 <fs_out>-mwskz,
+                 <fs_out>-aufnr,
+                 <fs_out>-pspel,
+                 <fs_out>-umskz,
+                 <fs_out>-gsber,
+                 <fs_out>-gsber_2,
+                 <fs_out>-kosak.
+
+**-- open :  İstisna kontrolü
+          if  ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+           or ( iv_fiori eq abap_true ).
+            call method zeho_cl020=>check_exit
+              exporting
+                it_t005 = lt_t005[]
+                it_t006 = lt_t006[]
+                it_t007 = lt_t007[]
+                it_t018 = lt_t018[]
+              changing
+                ch_out  = <fs_out>.
+          endif.
+**-- closed : İstisna kontrolü!!!
+
+**-- open : özel koşul tablosuna  ara!!!
+          sort lt_t007 ascending by bankc bukrs hbkid hktid vgint protp seqnr.
+          sort lt_t007 descending by seqnr.
+          call method zeho_cl020=>check_t007
+            exporting
+              it_t007 = lt_t007[]
+            changing
+              ch_out  = <fs_out>.
+**-- closed : özel koşul tablosuna ara!!!
+
+*      **-- Open : İcra ödemesi - TC kimlik no ile personel satıcısı-----magkas
+*          if <fs_out>-kunnr is initial and <fs_out>-lifnr is initial
+*             and <fs_out>-saknr is initial and lt_tckn_vend is not initial.
+*            clear: lv_tckn, lv_tckn_count.
+*            find first occurrence of regex 'T\.?\s*C\.?\s*K[İI]ML[İI]K\D*(\d{10,11})'
+*                 in <fs_out>-butxt                   " kalem metni alanı
+*                 submatches lv_tckn.
+*            if sy-subrc = 0.
+**-- Bu TC ile kaç personel eşleşiyor?
+*              loop at lt_tckn_vend into data(ls_tckn_vend)
+*                   where taxnum = lv_tckn.
+*                lv_tckn_count = lv_tckn_count + 1.
+*              endloop.
+*
+*              if lv_tckn_count = 1.
+**-- Tek personel: otomatik ata
+*                <fs_out>-lifnr = ls_tckn_vend-vendor.
+*                if <fs_out>-blart is initial.
+*                  read table mt_t024 into ls_t024 with key koart = 'K'
+*                                                           protp = <fs_out>-prtyp.
+*                  if sy-subrc = 0.
+*                    <fs_out>-blart = ls_t024-blart.
+*                  endif.
+*                endif.
+*              elseif lv_tckn_count > 1.
+**-- Birden fazla personel: atama yapılmaz, kullanıcı manuel girer
+*                ls_message-msgid = 'ZEHO'.
+*                ls_message-msgno = '050'.     " TC kimlik no ile birden fazla personel bulundu, cariyi manuel giriniz
+*                ls_message-msgty = 'W'.
+*                zeho_cl020=>collect_message( is_message = ls_message is_out = <fs_out> ).
+*              endif.
+*            endif.
+*          endif.
+**-- Closed : İcra ödemesi
+
+**-- Open : aktif cari tablosunda ara!!!
+          if  ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true ).
+            call method zeho_cl020=>check_t006
+              exporting
+                it_t006 = lt_t006[]
+              changing
+                ch_out  = <fs_out>.
+          endif.
+**-- Closed : aktif cari tablosunda ara!!!
+
+**-- Open : banka hesap eşleşmesi tablosunda ara!!!
+          if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true ).
+            call method zeho_cl020=>check_t005
+              exporting
+                it_t005 = lt_t005[]
+              changing
+                ch_out  = <fs_out>.
+          endif.
+**-- Closed : banka hesap eşleşmesi tablosunda ara!!!
+
+**-- Open : Banka Tanımlarını kontrol et
+          if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true ).
+            call method zeho_cl020=>check_t018
+              exporting
+                it_t018 = lt_t018[]
+              changing
+                ch_out  = <fs_out>.
+          endif.
+**-- Closed : Banka Tanımlarını kontrol et
+
+**-- Open : Banka Tanımlarını kontrol et
+          if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true ).
+            call method zeho_cl020=>check_t019
+              exporting
+                it_t019 = lt_t019[]
+              changing
+                ch_out  = <fs_out>.
+          endif.
+**-- Closed : Banka Tanımlarını kontrol et
+
+**-- Open : IBAN ile şirket banka hesabı
+          if ( <fs_out>-saknr is initial and <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true ).
+            if <fs_out>-iban is not initial.
+              data: ls_t002_iban type zeho_t002.
+              select single * from zeho_t002 into ls_t002_iban
+               where iban = <fs_out>-iban.
+              if sy-subrc eq 0.
+                <fs_out>-saknr = ls_t002_iban-hkont.
+                <fs_out>-gsber = ls_t002_iban-gsber.
+                if <fs_out>-blart is initial .
+*                  data ls_t024 like line of mt_t024.
+                  read table mt_t024 into ls_t024 with key koart = 'S'
+                                                           protp = <fs_out>-prtyp.
+                  if sy-subrc eq 0.
+                    <fs_out>-blart   = ls_t024-blart.
+                  endif.
+                endif.
+                <fs_out>-statu = '4'.
+              endif.
+            endif.
+          endif.
+**-- closed : IBAN ile şirket banka hesabı
+
+**-- Open : LFA1, KNA1 tablolarından VKN ile satıcı veya müşteri bul
+          if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true and <fs_out>-txt50 is initial ).
+
+
+            is_return = xsdbool( <fs_out>-butxt cs return_keyword
+                             or <fs_out>-butxt cs return_keyword_tr ).
+
+            is_customer_mv = xsdbool(
+                 ( <fs_out>-prtyp = '+' and is_return = abap_false )     " tahsilat
+              or ( <fs_out>-prtyp = '-' and is_return = abap_true ) ).   " müşteriye iade
+
+            if is_customer_mv = abap_true.
+              " Müşteri
+              zeho_cl020=>check_kna1( changing ch_out = <fs_out> ).
+            else.
+              " Satıcı
+              zeho_cl020=>check_lfa1( changing ch_out = <fs_out> ).
+            endif.
+
+*            if <fs_out>-prtyp = '+'.
+*              " Müşteri
+*              call method zeho_cl020=>check_kna1
+*                changing
+*                  ch_out = <fs_out>.
+*            else.
+*              " Satıcı
+*              call method zeho_cl020=>check_lfa1
+*                changing
+*                  ch_out = <fs_out>.
+*            endif.
+
+            if <fs_out>-kunnr is not initial or <fs_out>-lifnr is not initial or <fs_out>-saknr is not initial and <fs_out>-statu ne '6'.
+              <fs_out>-statu = '4'.
+            else.
+              <fs_out>-statu = '2'.
+            endif.
+          endif.
+**-- Closed : LFA1, KNA1 tablolarından VKN ile satıcı veya müşteri bul
+
+**-- open : tiban tablosundan iban ile müşteri veya satıcı bul
+          if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true ).
+            call method zeho_cl020=>check_tiban
+              changing
+                ch_out = <fs_out>.
+          endif.
+**-- Closed : TIBAN tablosundan IBAN ile müşteri veya satıcı bul
+
+**-- open : Mutabakat Hesabını bulma
+          data lv_check(1).
+          clear lv_check.                                 " önceki satırdan kalmasın
+
+          if <fs_out>-kunnr is not initial.
+            lv_check = 'D'.
+          elseif <fs_out>-lifnr is not initial .
+            lv_check = 'K'.
+          endif.
+          if lv_check is not initial.
+            call method zeho_cl020=>check_account
+              exporting
+                iv_check = lv_check                " Müşteri (D) , Satıcı (K)
+              changing
+                ch_out   = <fs_out>.
+          endif.
+**-- Closed : Mutabakat Hesabını bulma
+
+**-- Open : Banka işlem kodu karşılıkları
+          if <fs_out>-vgint is initial.
+            call method zeho_cl020=>check_t004
+              exporting
+                it_t004 = lt_t004[]
+              changing
+                ch_out  = <fs_out>.
+          endif.
+**-- Closed : Banka işlem kodu karşılıkları.
+
+*-------------------------------------------------------------------*
+* *- Manuel muhasebeleşmiş kayıt kontrolü (müşteri bulunduktan sonra)
+* *- added by <kullanıcı> DD.MM.YYYY HH:MM:SS
+*-------------------------------------------------------------------*
+          clear: lv_found, lv_count.
+          lv_tsl = cond #( when <fs_out>-prtyp = '+' then abs( <fs_out>-amount )
+                           else abs( <fs_out>-amount ) * -1 ).
+
+*-------------------------------------------------------------------*
+* *- Bu satırdan EHO ile atılan belgenin referansı (bapi_header ile aynı)
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+          clear: lv_tabix, lv_first_idx, lv_xblnr_eho.
+          lv_xblnr_eho = 'EHO-' && <fs_out>-refbk.
+*-------------------------------------------------------------------*
+
+*-- Aynı hesap/tarih/tutar/para birimindeki ilk aday
+          read table lt_acdoca transporting no fields
+               with key rbukrs = <fs_out>-bukrs
+                        racct  = <fs_out>-hkont
+                        budat  = <fs_out>-prdat
+                        tsl    = lv_tsl
+                        rtcur  = <fs_out>-waers
+               binary search.
+
+          if sy-subrc = 0.
+*-------------------------------------------------------------------*
+* *- Önce bu satırdan EHO ile atılmış belgeyi ara (kesin eşleşme).
+* *- Cari türetmesi belgeden farklı olsa da kendi belgesi bulunur.
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+            lv_first_idx = sy-tabix.
+
+            loop at lt_acdoca into ls_acdoca from lv_first_idx.
+              if ls_acdoca-rbukrs <> <fs_out>-bukrs or
+                 ls_acdoca-racct  <> <fs_out>-hkont or
+                 ls_acdoca-budat  <> <fs_out>-prdat or
+                 ls_acdoca-tsl    <> lv_tsl         or
+                 ls_acdoca-rtcur  <> <fs_out>-waers.
+                exit.                                     " adaylar bitti
+              endif.
+
+              if ls_acdoca-xblnr = lv_xblnr_eho.
+                lv_tabix = sy-tabix.
+                lv_found = abap_true.
+                exit.
+              endif.
+            endloop.
+
+*-- Kendi EHO belgesi yoksa mevcut mantık: müşteriye/satıcıya göre seç
+            if lv_found = abap_false.
+*-- Adayları dolaş, müşteriye göre seç
+*            loop at lt_acdoca into ls_acdoca from sy-tabix.
+              loop at lt_acdoca into ls_acdoca from lv_first_idx.
+                if ls_acdoca-rbukrs <> <fs_out>-bukrs or
+                   ls_acdoca-racct  <> <fs_out>-hkont or
+                   ls_acdoca-budat  <> <fs_out>-prdat or
+                   ls_acdoca-tsl    <> lv_tsl         or
+                   ls_acdoca-rtcur  <> <fs_out>-waers.
+                  exit.                                   " adaylar bitti
+                endif.
+
+                if <fs_out>-kunnr is not initial.
+                  if ls_acdoca-kunnr = <fs_out>-kunnr.    " müşteri tutuyor
+                    lv_tabix = sy-tabix.
+                    lv_found = abap_true.
+                    exit.
+                  endif.
+                elseif <fs_out>-lifnr is not initial.
+                  if ls_acdoca-lifnr = <fs_out>-lifnr.    " satıcı tutuyor
+                    lv_tabix = sy-tabix.
+                    lv_found = abap_true.
+                    exit.
+                  endif.
+                else.
+                  lv_count = lv_count + 1.                " cari yok: adayları say
+                  lv_tabix = sy-tabix.
+                endif.
+              endloop.
+
+*-- Cari bulunamadıysa sadece tek aday varsa kabul et
+              if <fs_out>-kunnr is initial and <fs_out>-lifnr is initial
+                 and lv_count = 1.
+                lv_found = abap_true.
+              endif.
+            endif.                                        " lv_found = abap_false
+*-------------------------------------------------------------------*
+          endif.
+
+          if lv_found = abap_true.
+            read table lt_acdoca into ls_acdoca index lv_tabix.
+            <fs_out>-belnr = ls_acdoca-belnr.
+
+            if <fs_out>-kunnr is initial and <fs_out>-lifnr is initial.
+              <fs_out>-kunnr = ls_acdoca-kunnr.           " cariyi belgeden al
+              <fs_out>-lifnr = ls_acdoca-lifnr.
+            endif.
+*            <fs_out>-statu = '7'.
+*-------------------------------------------------------------------*
+* *- Belge bu satırdan EHO ile atılmışsa EHO dışı (7) değil,
+* *- muhasebeleşmiş (5). Statü 5 muhasebeleştirme sırasında
+* *- yazılamamış demektir; burada tamamlanıyor.
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+            if ls_acdoca-xblnr = lv_xblnr_eho.
+              <fs_out>-blart = ls_acdoca-blart.           " rapordaki tür = belgedeki tür
+              <fs_out>-statu = cv_05.
+
+              clear ls_message.
+              ls_message-msgid = 'ZEHO'.
+              ls_message-msgno = '038'.     " İlgili kayıt daha önce muhasebeleştirilmiştir. Kayıt güncellenmiştir.
+              ls_message-msgty = 'S'.
+              zeho_cl020=>collect_message( is_message = ls_message is_out = <fs_out> ).
+            else.
+              <fs_out>-statu = '7'.
+            endif.
+*-------------------------------------------------------------------*
+            delete lt_acdoca index lv_tabix.
+          else.
+*-------------------------------------------------------------------*
+**-- open : Log tablosuna yaz - Statu güncelle - hesap metni bul
+            if <fs_out>-kunnr is not initial or <fs_out>-lifnr is not initial or <fs_out>-saknr is not initial.
+              <fs_out>-statu = '4'.
+            else.
+              <fs_out>-statu = '2'.
+            endif.
+
+            if <fs_out>-statu eq '4'.
+              ls_message-msgid     = 'ZEHO'.
+              ls_message-msgno     = '032' .
+              ls_message-msgty     = 'S'   .
+              zeho_cl020=>collect_message( is_message = ls_message is_out = <fs_out> ).
+            elseif <fs_out>-statu eq '6'.
+              ls_message-msgid     = 'ZEHO'.
+              ls_message-msgno     = '016' .
+              ls_message-msgty     = 'E'   .
+              zeho_cl020=>collect_message( is_message = ls_message is_out = <fs_out> ).
+            else.
+              ls_message-msgid     = 'ZEHO'.
+              ls_message-msgno     = '037' .
+              ls_message-msgty     = 'E'   .
+              zeho_cl020=>collect_message( is_message = ls_message is_out = <fs_out> ).
+            endif.
+          endif.     " lv_found
+
+        endif.       " faccn
+      endif.         " belnr
+
+*-- Tek update: her satır buradan geçer
+      call method zeho_cl020=>update_bank_item(
+        exporting
+          iv_statu = <fs_out>-statu
+        changing
+          cs_out   = <fs_out> ).
+
+    endloop.
+
+
+    commit work.
+
+  endif.             " ct_out
+
+endmethod.
