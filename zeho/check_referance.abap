@@ -66,13 +66,15 @@ method check_referance.
         continue.
       endif.
 
-*-- Başka bir EHO satırına bağlı belge bu satırın olamaz
-*-- (bu metot sadece BELNR'si boş satırlar için çağrılıyor)
+*-- Başka bir EHO satırına bağlı belge bu satırın olamaz. Bu satırın
+*-- kendisi (SEQNR aynı) hariç tutuluyor: belge başka bir oturumda bu
+*-- satırdan atılmış ve DB'de bu satıra bağlıysa bulunmalı.
       clear lv_belnr_t012.
       select single belnr from zeho_t012
         into lv_belnr_t012
         where bukrs = ls_bkpf_ref-bukrs
-          and belnr = ls_bkpf_ref-belnr.
+          and belnr = ls_bkpf_ref-belnr
+          and seqnr <> is_out-seqnr.
       if sy-subrc = 0.
         continue.
       endif.

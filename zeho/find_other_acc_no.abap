@@ -130,10 +130,56 @@ method find_other_acc_no.
         lv_first_idx type sy-tabix.
 *-------------------------------------------------------------------*
 
+*-------------------------------------------------------------------*
+* *- DB'deki güncel statü / belge numarası (başka oturumda
+* *- muhasebeleşmiş satırın eski haliyle ezilmemesi için)
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+  types: begin of ty_db_state,
+           seqnr type zeho_t012-seqnr,
+           bukrs type zeho_t012-bukrs,
+           bankc type zeho_t012-bankc,
+           statu type zeho_t012-statu,
+           belnr type zeho_t012-belnr,
+         end of ty_db_state.
+  data: lt_db_state type sorted table of ty_db_state
+                    with non-unique key seqnr bukrs bankc,
+        ls_db_state type ty_db_state.
+*-------------------------------------------------------------------*
+
 ****************************************-- OPEN --*********************************************
 ******************************-- UYARLAMADAN DAN CARİ/HESAP ARAMA  --**************************
 
   if ct_out is not initial.
+
+*-------------------------------------------------------------------*
+* *- Ekrandaki satırlar başka bir oturumda muhasebeleşmiş olabilir.
+* *- Bellekte BELNR boş ama DB'de doluysa DB'deki değer alınıyor;
+* *- aksi halde update_bank_item eski hali (statü 4, BELNR boş) DB'ye
+* *- yazıp belge bağını koparıyordu.
+* *- added by <kullanıcı> 06.10.2026
+*-------------------------------------------------------------------*
+    free lt_db_state.
+    select seqnr bukrs bankc statu belnr
+      from zeho_t012
+      into table lt_db_state
+      for all entries in ct_out
+      where seqnr = ct_out-seqnr
+        and bukrs = ct_out-bukrs
+        and bankc = ct_out-bankc.
+
+    loop at ct_out assigning <fs_out> where belnr is initial.
+      read table lt_db_state into ls_db_state
+           with table key seqnr = <fs_out>-seqnr
+                          bukrs = <fs_out>-bukrs
+                          bankc = <fs_out>-bankc.
+      if sy-subrc = 0 and ls_db_state-belnr is not initial.
+        <fs_out>-belnr = ls_db_state-belnr.
+        <fs_out>-statu = ls_db_state-statu.
+      endif.
+    endloop.
+*-------------------------------------------------------------------*
+
     free mt_t024.
     select * from zeho_t024
       into corresponding fields of table mt_t024.       "#EC CI_NOWHERE
