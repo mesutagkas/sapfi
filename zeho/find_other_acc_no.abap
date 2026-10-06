@@ -20,6 +20,7 @@ method find_other_acc_no.
 *-------------------------------------------------------------------*
            blart  type bkpf-blart,
            xblnr  type bkpf-xblnr,
+           bktxt  type bkpf-bktxt,                " tam banka referansı (yeni belgeler)
 *-------------------------------------------------------------------*
          end of ty_acdoca,
          begin of ty_acdoca_kun,
@@ -41,6 +42,7 @@ method find_other_acc_no.
            gjahr type bkpf-gjahr,
            blart type bkpf-blart,
            xblnr type bkpf-xblnr,
+           bktxt type bkpf-bktxt,
          end of ty_bkpf_ref.
 *-------------------------------------------------------------------*
 
@@ -123,6 +125,8 @@ method find_other_acc_no.
   data: lt_bkpf_ref  type sorted table of ty_bkpf_ref with unique key bukrs belnr gjahr,
         ls_bkpf_ref  type ty_bkpf_ref,
         lv_xblnr_eho type bkpf-xblnr,
+        lv_bktxt_eho type bkpf-bktxt,
+        lv_own_doc   type abap_bool,
         lv_first_idx type sy-tabix.
 *-------------------------------------------------------------------*
 
@@ -225,7 +229,7 @@ method find_other_acc_no.
 * *- added by <kullanıcı> 06.10.2026
 *-------------------------------------------------------------------*
       free lt_bkpf_ref.
-      select bukrs belnr gjahr blart xblnr
+      select bukrs belnr gjahr blart xblnr bktxt
         from bkpf
         into table lt_bkpf_ref
         for all entries in lt_acdoca
@@ -257,6 +261,7 @@ method find_other_acc_no.
         if sy-subrc = 0.
           <fs_acdoca>-blart = ls_bkpf_ref-blart.
           <fs_acdoca>-xblnr = ls_bkpf_ref-xblnr.
+          <fs_acdoca>-bktxt = ls_bkpf_ref-bktxt.
         endif.
 *-------------------------------------------------------------------*
       endloop.
@@ -538,8 +543,9 @@ method find_other_acc_no.
 * *- Bu satırdan EHO ile atılan belgenin referansı (bapi_header ile aynı)
 * *- added by <kullanıcı> 06.10.2026
 *-------------------------------------------------------------------*
-          clear: lv_tabix, lv_first_idx, lv_xblnr_eho.
-          lv_xblnr_eho = 'EHO-' && <fs_out>-refbk.
+          clear: lv_tabix, lv_first_idx, lv_xblnr_eho, lv_bktxt_eho.
+          lv_xblnr_eho = 'EHO-' && <fs_out>-refbk.  " 16 karaktere kesilir
+          lv_bktxt_eho = <fs_out>-refbk.            " tam banka referansı
 *-------------------------------------------------------------------*
 
 *-- Aynı hesap/tarih/tutar/para birimindeki ilk aday
@@ -568,7 +574,9 @@ method find_other_acc_no.
                 exit.                                     " adaylar bitti
               endif.
 
-              if ls_acdoca-xblnr = lv_xblnr_eho.
+*-- Yeni belge: başlık metni = tam referans. Eski belge (BKTXT boş): XBLNR.
+              if ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
+              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ).
                 lv_tabix = sy-tabix.
                 lv_found = abap_true.
                 exit.
@@ -630,7 +638,10 @@ method find_other_acc_no.
 * *- yazılamamış demektir; burada tamamlanıyor.
 * *- added by <kullanıcı> 06.10.2026
 *-------------------------------------------------------------------*
-            if ls_acdoca-xblnr = lv_xblnr_eho.
+            lv_own_doc = xsdbool(
+                 ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
+              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
+            if lv_own_doc = abap_true.
               <fs_out>-blart = ls_acdoca-blart.           " rapordaki tür = belgedeki tür
               <fs_out>-statu = cv_05.
 
