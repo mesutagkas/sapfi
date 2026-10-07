@@ -29,10 +29,17 @@ method bapi_receivable.
 * *- Showroom iade süreci (find_other_acc_no ile aynı metin kalıbı)
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
-  constants: lc_shw_mark  type string value `(SHOWROOM|SHW)\s*-?\s*[İIıi]ADE`,
-             lc_shw_sipno type string value `S[İIıi]P(AR[İIıi][ŞSşs])?\.?\s*NO\s*[:.]?\s*\(?\s*(\d+)`,
-             lc_shw_regex type string value `(\d+)\s*-?\s*(SHOWROOM|SHW)\s*-?\s*[İIıi]ADE`.
-  data: lv_shw_dummy     type string,
+*-- Metin normalizasyonu (regex kullanılmıyor). Eşleme çiftleri:
+*-- İ→I, ı→I, Ş→S, ş→S ve - ( ) : . / → boşluk
+  constants: lc_norm_map type string value `İIıIŞSşS- ( ) : . / `.
+  data: lv_norm          type string,
+        lv_txt_part      type string,
+        lv_tok           type string,
+        lt_tok           type standard table of string,
+        lv_moff          type i,
+        lv_loff          type i,
+        lv_mlen          type i,
+        lv_shw_found     type abap_bool,
         lv_shw_vbeln_txt type string,
         lv_shw_vbeln     type vbak-vbeln.
 *-------------------------------------------------------------------*
@@ -82,22 +89,65 @@ method bapi_receivable.
 * *- etkilenmez. Sipariş no find_other_acc_no ile aynı kuralla bulunur.
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
-  clear: lv_shw_dummy, lv_shw_vbeln_txt, lv_shw_vbeln.
-  find first occurrence of regex lc_shw_mark
-       in is_out-butxt
-       ignoring case.
+  clear: lv_shw_found, lv_shw_vbeln_txt, lv_shw_vbeln.
+
+  lv_norm = is_out-butxt.
+  translate lv_norm to upper case.
+  translate lv_norm using lc_norm_map.
+  condense lv_norm.
+
+*-- Showroom iade işareti
+  find first occurrence of 'SHOWROOM IADE' in lv_norm match offset lv_moff.
+  if sy-subrc ne 0.
+    find first occurrence of 'SHOWROOMIADE' in lv_norm match offset lv_moff.
+  endif.
+  if sy-subrc ne 0.
+    find first occurrence of 'SHW IADE' in lv_norm match offset lv_moff.
+  endif.
+  if sy-subrc ne 0.
+    find first occurrence of 'SHWIADE' in lv_norm match offset lv_moff.
+  endif.
   if sy-subrc eq 0.
-    find first occurrence of regex lc_shw_sipno
-         in is_out-butxt
-         ignoring case
-         submatches lv_shw_dummy lv_shw_vbeln_txt.
+    lv_shw_found = abap_true.
+  endif.
+
+  if lv_shw_found eq abap_true.
+*-- 1) "SİPARİŞ NO / SİP NO" etiketinden sonraki ilk kelime
+    find first occurrence of 'SIPARIS NO' in lv_norm match offset lv_loff match length lv_mlen.
     if sy-subrc ne 0.
-      find first occurrence of regex lc_shw_regex
-           in is_out-butxt
-           ignoring case
-           submatches lv_shw_vbeln_txt.
+      find first occurrence of 'SIPARISNO' in lv_norm match offset lv_loff match length lv_mlen.
+    endif.
+    if sy-subrc ne 0.
+      find first occurrence of 'SIP NO' in lv_norm match offset lv_loff match length lv_mlen.
+    endif.
+    if sy-subrc ne 0.
+      find first occurrence of 'SIPNO' in lv_norm match offset lv_loff match length lv_mlen.
+    endif.
+    if sy-subrc eq 0.
+      lv_loff = lv_loff + lv_mlen.
+      lv_txt_part = lv_norm+lv_loff.
+      condense lv_txt_part.
+      clear lt_tok.
+      split lv_txt_part at space into table lt_tok.
+      read table lt_tok into lv_tok index 1.
+      if sy-subrc eq 0 and lv_tok is not initial and lv_tok co '0123456789'.
+        lv_shw_vbeln_txt = lv_tok.
+      endif.
+    endif.
+
+*-- 2) Etiket yoksa "SHW İADE" işaretinin hemen önündeki kelime
+    if lv_shw_vbeln_txt is initial and lv_moff > 0.
+      lv_txt_part = lv_norm(lv_moff).
+      condense lv_txt_part.
+      clear lt_tok.
+      split lv_txt_part at space into table lt_tok.
+      read table lt_tok into lv_tok index lines( lt_tok ).
+      if sy-subrc eq 0 and lv_tok is not initial and lv_tok co '0123456789'.
+        lv_shw_vbeln_txt = lv_tok.
+      endif.
     endif.
   endif.
+
   if lv_shw_vbeln_txt is not initial.
     shift lv_shw_vbeln_txt left deleting leading '0'.
     if lv_shw_vbeln_txt is not initial and strlen( lv_shw_vbeln_txt ) le 10.

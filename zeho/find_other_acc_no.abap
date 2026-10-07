@@ -151,10 +151,20 @@ method find_other_acc_no.
 * *- SSH İade süreci
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
-  constants: lc_ssh_regex type string value `(\d+)\s*-?\s*SSH\s*-?\s*[İIıi]ADE`,
+*-- Metin normalizasyonu (regex kullanılmıyor: POSIX regex bazı metinlerde
+*-- CX_SY_REGEX_TOO_COMPLEX dump'ı veriyordu). Eşleme çiftleri:
+*-- İ→I, ı→I, Ş→S, ş→S ve - ( ) : . / → boşluk
+  constants: lc_norm_map  type string value `İIıIŞSşS- ( ) : . / `,
              lc_ssh_xref3 type xref3  value '2301.SSH',
              lc_ssh_bukrs type bukrs  value '1000'.
-  data: lv_ssh_kunnr_txt type string,
+  data: lv_norm          type string,
+        lv_txt_part      type string,
+        lv_tok           type string,
+        lt_tok           type standard table of string,
+        lv_moff          type i,
+        lv_loff          type i,
+        lv_mlen          type i,
+        lv_ssh_kunnr_txt type string,
         lv_ssh_kunnr     type kna1-kunnr,
         lv_ssh_check     type kna1-kunnr.
 *-------------------------------------------------------------------*
@@ -163,11 +173,8 @@ method find_other_acc_no.
 * *- Showroom iade süreci
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
-  constants: lc_shw_mark  type string value `(SHOWROOM|SHW)\s*-?\s*[İIıi]ADE`,
-             lc_shw_sipno type string value `S[İIıi]P(AR[İIıi][ŞSşs])?\.?\s*NO\s*[:.]?\s*\(?\s*(\d+)`,
-             lc_shw_regex type string value `(\d+)\s*-?\s*(SHOWROOM|SHW)\s*-?\s*[İIıi]ADE`,
-             lc_shw_blart type blart  value 'MN'.
-  data: lv_shw_dummy     type string,
+  constants: lc_shw_blart type blart  value 'MN'.
+  data: lv_shw_found     type abap_bool,
         lv_shw_vbeln_txt type string,
         lv_shw_vbeln     type vbak-vbeln,
         lv_shw_kunnr     type vbak-kunnr,
@@ -425,6 +432,17 @@ method find_other_acc_no.
               ch_out  = <fs_out>.
 **-- closed : özel koşul tablosuna ara!!!
 
+*-------------------------------------------------------------------*
+* *- SSH / Showroom iade için normalize metin: büyük harf, Türkçe
+* *- karakterler sade (İ/ı→I, Ş→S), - ( ) : . / boşluk, tek boşluk
+* *- added by <kullanıcı> 07.10.2026
+*-------------------------------------------------------------------*
+          lv_norm = <fs_out>-butxt.
+          translate lv_norm to upper case.
+          translate lv_norm using lc_norm_map.
+          condense lv_norm.
+*-------------------------------------------------------------------*
+
 **-- Open : SSH İade - metindeki müşteri kodu ile müşteri bul
 *-------------------------------------------------------------------*
 * *- SSH İade süreci: kalem metninde "<müşteri kodu>-SSH İade" geçiyorsa
@@ -437,11 +455,22 @@ method find_other_acc_no.
           or ( iv_fiori eq abap_true ).
             if <fs_out>-bukrs eq lc_ssh_bukrs.
               clear: lv_ssh_kunnr_txt, lv_ssh_kunnr, lv_ssh_check.
-              find first occurrence of regex lc_ssh_regex
-                   in <fs_out>-butxt
-                   ignoring case
-                   submatches lv_ssh_kunnr_txt.
-              if sy-subrc eq 0.
+*-- "SSH İADE" işaretinin hemen önündeki kelime müşteri kodu
+              find first occurrence of 'SSH IADE' in lv_norm match offset lv_moff.
+              if sy-subrc ne 0.
+                find first occurrence of 'SSHIADE' in lv_norm match offset lv_moff.
+              endif.
+              if sy-subrc eq 0 and lv_moff > 0.
+                lv_txt_part = lv_norm(lv_moff).
+                condense lv_txt_part.
+                clear lt_tok.
+                split lv_txt_part at space into table lt_tok.
+                read table lt_tok into lv_tok index lines( lt_tok ).
+                if sy-subrc eq 0 and lv_tok is not initial and lv_tok co '0123456789'.
+                  lv_ssh_kunnr_txt = lv_tok.
+                endif.
+              endif.
+              if lv_ssh_kunnr_txt is not initial.
 *-- Baştaki sıfırlar atılıp uzunluk kontrol ediliyor (müşteri no en fazla 10 hane)
                 shift lv_ssh_kunnr_txt left deleting leading '0'.
                 if lv_ssh_kunnr_txt is not initial and strlen( lv_ssh_kunnr_txt ) le 10.
@@ -492,22 +521,59 @@ method find_other_acc_no.
 *-------------------------------------------------------------------*
           if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
           or ( iv_fiori eq abap_true ).
-            clear: lv_shw_dummy, lv_shw_vbeln_txt, lv_shw_vbeln, lv_shw_kunnr, lv_shw_anlasma, lv_shw_prctr.
-            find first occurrence of regex lc_shw_mark
-                 in <fs_out>-butxt
-                 ignoring case.
+            clear: lv_shw_found, lv_shw_vbeln_txt, lv_shw_vbeln, lv_shw_kunnr, lv_shw_anlasma, lv_shw_prctr.
+*-- Showroom iade işareti
+            find first occurrence of 'SHOWROOM IADE' in lv_norm match offset lv_moff.
+            if sy-subrc ne 0.
+              find first occurrence of 'SHOWROOMIADE' in lv_norm match offset lv_moff.
+            endif.
+            if sy-subrc ne 0.
+              find first occurrence of 'SHW IADE' in lv_norm match offset lv_moff.
+            endif.
+            if sy-subrc ne 0.
+              find first occurrence of 'SHWIADE' in lv_norm match offset lv_moff.
+            endif.
             if sy-subrc eq 0.
-              find first occurrence of regex lc_shw_sipno
-                   in <fs_out>-butxt
-                   ignoring case
-                   submatches lv_shw_dummy lv_shw_vbeln_txt.
+              lv_shw_found = abap_true.
+            endif.
+
+            if lv_shw_found eq abap_true.
+*-- 1) "SİPARİŞ NO / SİP NO" etiketinden sonraki ilk kelime
+              find first occurrence of 'SIPARIS NO' in lv_norm match offset lv_loff match length lv_mlen.
               if sy-subrc ne 0.
-                find first occurrence of regex lc_shw_regex
-                     in <fs_out>-butxt
-                     ignoring case
-                     submatches lv_shw_vbeln_txt.
+                find first occurrence of 'SIPARISNO' in lv_norm match offset lv_loff match length lv_mlen.
+              endif.
+              if sy-subrc ne 0.
+                find first occurrence of 'SIP NO' in lv_norm match offset lv_loff match length lv_mlen.
+              endif.
+              if sy-subrc ne 0.
+                find first occurrence of 'SIPNO' in lv_norm match offset lv_loff match length lv_mlen.
+              endif.
+              if sy-subrc eq 0.
+                lv_loff = lv_loff + lv_mlen.
+                lv_txt_part = lv_norm+lv_loff.
+                condense lv_txt_part.
+                clear lt_tok.
+                split lv_txt_part at space into table lt_tok.
+                read table lt_tok into lv_tok index 1.
+                if sy-subrc eq 0 and lv_tok is not initial and lv_tok co '0123456789'.
+                  lv_shw_vbeln_txt = lv_tok.
+                endif.
+              endif.
+
+*-- 2) Etiket yoksa "SHW İADE" işaretinin hemen önündeki kelime
+              if lv_shw_vbeln_txt is initial and lv_moff > 0.
+                lv_txt_part = lv_norm(lv_moff).
+                condense lv_txt_part.
+                clear lt_tok.
+                split lv_txt_part at space into table lt_tok.
+                read table lt_tok into lv_tok index lines( lt_tok ).
+                if sy-subrc eq 0 and lv_tok is not initial and lv_tok co '0123456789'.
+                  lv_shw_vbeln_txt = lv_tok.
+                endif.
               endif.
             endif.
+
             if lv_shw_vbeln_txt is not initial.
 *-- Baştaki sıfırlar atılıp uzunluk kontrol ediliyor (sipariş no en fazla 10 hane)
               shift lv_shw_vbeln_txt left deleting leading '0'.
