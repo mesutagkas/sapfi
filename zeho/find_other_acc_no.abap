@@ -159,6 +159,19 @@ method find_other_acc_no.
         lv_ssh_check     type kna1-kunnr.
 *-------------------------------------------------------------------*
 
+*-------------------------------------------------------------------*
+* *- Showroom iade süreci
+* *- added by <kullanıcı> 07.10.2026
+*-------------------------------------------------------------------*
+  constants: lc_shw_regex type string value `(\d+)\s*-?\s*SHW\s*-?\s*[İIıi]ADE`,
+             lc_shw_blart type blart  value 'MN'.
+  data: lv_shw_vbeln_txt type string,
+        lv_shw_vbeln     type vbak-vbeln,
+        lv_shw_kunnr     type vbak-kunnr,
+        lv_shw_anlasma   type vbak-zzanlasma,
+        lv_shw_prctr     type vbap-prctr.
+*-------------------------------------------------------------------*
+
 ****************************************-- OPEN --*********************************************
 ******************************-- UYARLAMADAN DAN CARİ/HESAP ARAMA  --**************************
 
@@ -460,6 +473,64 @@ method find_other_acc_no.
           endif.
 *-------------------------------------------------------------------*
 **-- Closed : SSH İade
+
+**-- Open : Showroom iade - metindeki sipariş no ile müşteri bul
+*-------------------------------------------------------------------*
+* *- Showroom iade: kalem metninde "<sipariş no> SHW İADE" geçiyorsa
+* *- (ör. "SİPARİŞ NO : (11568726 SHW İADE )"; büyük/küçük harf, boşluk,
+* *- tire farkları tolere edilir) sipariş no 10 haneye tamamlanıp:
+* *- VBAK-KUNNR → müşteri, VBAK-ZZANLASMA → bağlantı anlaşması (XREF3),
+* *- VBAP-PRCTR → kâr merkezi, belge türü MN.
+* *- Sipariş no muhasebeleştirmede bapi_receivable'da REF_KEY_2'ye yazılır.
+* *- added by <kullanıcı> 07.10.2026
+*-------------------------------------------------------------------*
+          if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true ).
+            clear: lv_shw_vbeln_txt, lv_shw_vbeln, lv_shw_kunnr, lv_shw_anlasma, lv_shw_prctr.
+            find first occurrence of regex lc_shw_regex
+                 in <fs_out>-butxt
+                 ignoring case
+                 submatches lv_shw_vbeln_txt.
+            if sy-subrc eq 0.
+*-- Baştaki sıfırlar atılıp uzunluk kontrol ediliyor (sipariş no en fazla 10 hane)
+              shift lv_shw_vbeln_txt left deleting leading '0'.
+              if lv_shw_vbeln_txt is not initial and strlen( lv_shw_vbeln_txt ) le 10.
+                lv_shw_vbeln = lv_shw_vbeln_txt.
+                call function 'CONVERSION_EXIT_ALPHA_INPUT'
+                  exporting
+                    input  = lv_shw_vbeln
+                  importing
+                    output = lv_shw_vbeln.
+
+                select single kunnr zzanlasma
+                  from vbak
+                  into (lv_shw_kunnr, lv_shw_anlasma)
+                  where vbeln = lv_shw_vbeln.
+                if sy-subrc eq 0 and lv_shw_kunnr is not initial.
+
+*-- Kâr merkezi: siparişin kâr merkezi dolu ilk kalemi
+                  select prctr
+                    from vbap
+                    into lv_shw_prctr
+                    up to 1 rows
+                    where vbeln = lv_shw_vbeln
+                      and prctr ne space
+                    order by posnr.
+                  endselect.
+
+                  clear: <fs_out>-lifnr, <fs_out>-saknr.
+                  <fs_out>-kunnr = lv_shw_kunnr.
+                  <fs_out>-koart = 'D'.
+                  <fs_out>-xref3 = lv_shw_anlasma.
+                  <fs_out>-prctr = lv_shw_prctr.
+                  <fs_out>-blart = lc_shw_blart.
+                  <fs_out>-statu = '4'.
+                endif.
+              endif.
+            endif.
+          endif.
+*-------------------------------------------------------------------*
+**-- Closed : Showroom iade
 
 *      **-- Open : İcra ödemesi - TC kimlik no ile personel satıcısı-----magkas
 *          if <fs_out>-kunnr is initial and <fs_out>-lifnr is initial
