@@ -163,9 +163,12 @@ method find_other_acc_no.
 * *- Showroom iade süreci
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
-  constants: lc_shw_regex type string value `(\d+)\s*-?\s*SHW\s*-?\s*[İIıi]ADE`,
+  constants: lc_shw_mark  type string value `(SHOWROOM|SHW)\s*-?\s*[İIıi]ADE`,
+             lc_shw_sipno type string value `S[İIıi]P(AR[İIıi][ŞSşs])?\.?\s*NO\s*[:.]?\s*\(?\s*(\d+)`,
+             lc_shw_regex type string value `(\d+)\s*-?\s*(SHOWROOM|SHW)\s*-?\s*[İIıi]ADE`,
              lc_shw_blart type blart  value 'MN'.
-  data: lv_shw_vbeln_txt type string,
+  data: lv_shw_dummy     type string,
+        lv_shw_vbeln_txt type string,
         lv_shw_vbeln     type vbak-vbeln,
         lv_shw_kunnr     type vbak-kunnr,
         lv_shw_anlasma   type vbak-zzanlasma,
@@ -476,22 +479,36 @@ method find_other_acc_no.
 
 **-- Open : Showroom iade - metindeki sipariş no ile müşteri bul
 *-------------------------------------------------------------------*
-* *- Showroom iade: kalem metninde "<sipariş no> SHW İADE" geçiyorsa
-* *- (ör. "SİPARİŞ NO : (11568726 SHW İADE )"; büyük/küçük harf, boşluk,
-* *- tire farkları tolere edilir) sipariş no 10 haneye tamamlanıp:
-* *- VBAK-KUNNR → müşteri, VBAK-ZZANLASMA → bağlantı anlaşması (XREF3),
-* *- VBAP-PRCTR → kâr merkezi, belge türü MN.
+* *- Showroom iade: kalem metninde "SHOWROOM İADE" / "SHW İADE" geçiyorsa
+* *- sipariş no önce "SİP NO / SİPARİŞ NO" etiketinden, yoksa "SHW İADE"
+* *- öncesindeki sayıdan alınır. Örnekler:
+* *-   "SİPARİŞ NO : (11568726 SHW İADE )"
+* *-   "Havale Ücreti ... showroom iade-Sip no:1500251162"
+* *- (büyük/küçük harf, boşluk, tire farkları tolere edilir) Sipariş no
+* *- 10 haneye tamamlanıp: VBAK-KUNNR → müşteri, VBAK-ZZANLASMA → bağlantı
+* *- anlaşması (XREF3), VBAP-PRCTR → kâr merkezi, belge türü MN.
 * *- Sipariş no muhasebeleştirmede bapi_receivable'da REF_KEY_2'ye yazılır.
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
           if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
           or ( iv_fiori eq abap_true ).
-            clear: lv_shw_vbeln_txt, lv_shw_vbeln, lv_shw_kunnr, lv_shw_anlasma, lv_shw_prctr.
-            find first occurrence of regex lc_shw_regex
+            clear: lv_shw_dummy, lv_shw_vbeln_txt, lv_shw_vbeln, lv_shw_kunnr, lv_shw_anlasma, lv_shw_prctr.
+            find first occurrence of regex lc_shw_mark
                  in <fs_out>-butxt
-                 ignoring case
-                 submatches lv_shw_vbeln_txt.
+                 ignoring case.
             if sy-subrc eq 0.
+              find first occurrence of regex lc_shw_sipno
+                   in <fs_out>-butxt
+                   ignoring case
+                   submatches lv_shw_dummy lv_shw_vbeln_txt.
+              if sy-subrc ne 0.
+                find first occurrence of regex lc_shw_regex
+                     in <fs_out>-butxt
+                     ignoring case
+                     submatches lv_shw_vbeln_txt.
+              endif.
+            endif.
+            if lv_shw_vbeln_txt is not initial.
 *-- Baştaki sıfırlar atılıp uzunluk kontrol ediliyor (sipariş no en fazla 10 hane)
               shift lv_shw_vbeln_txt left deleting leading '0'.
               if lv_shw_vbeln_txt is not initial and strlen( lv_shw_vbeln_txt ) le 10.

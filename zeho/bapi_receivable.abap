@@ -29,8 +29,11 @@ method bapi_receivable.
 * *- Showroom iade süreci (find_other_acc_no ile aynı metin kalıbı)
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
-  constants lc_shw_regex type string value `(\d+)\s*-?\s*SHW\s*-?\s*[İIıi]ADE`.
-  data: lv_shw_vbeln_txt type string,
+  constants: lc_shw_mark  type string value `(SHOWROOM|SHW)\s*-?\s*[İIıi]ADE`,
+             lc_shw_sipno type string value `S[İIıi]P(AR[İIıi][ŞSşs])?\.?\s*NO\s*[:.]?\s*\(?\s*(\d+)`,
+             lc_shw_regex type string value `(\d+)\s*-?\s*(SHOWROOM|SHW)\s*-?\s*[İIıi]ADE`.
+  data: lv_shw_dummy     type string,
+        lv_shw_vbeln_txt type string,
         lv_shw_vbeln     type vbak-vbeln.
 *-------------------------------------------------------------------*
 
@@ -74,16 +77,28 @@ method bapi_receivable.
 
 *-------------------------------------------------------------------*
 * *- Showroom iade: sipariş no REF_KEY_2'ye (10 hane), rapordaki kâr
-* *- merkezi (VBAP-PRCTR) müşteri kalemine yazılıyor. Sadece metinde
-* *- "<sipariş no> SHW İADE" geçen kayıtlarda; diğer akışlar etkilenmez.
+* *- merkezi (VBAP-PRCTR) müşteri kalemine yazılıyor. Sadece metninde
+* *- "SHOWROOM İADE" / "SHW İADE" geçen kayıtlarda; diğer akışlar
+* *- etkilenmez. Sipariş no find_other_acc_no ile aynı kuralla bulunur.
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
-  clear: lv_shw_vbeln_txt, lv_shw_vbeln.
-  find first occurrence of regex lc_shw_regex
+  clear: lv_shw_dummy, lv_shw_vbeln_txt, lv_shw_vbeln.
+  find first occurrence of regex lc_shw_mark
        in is_out-butxt
-       ignoring case
-       submatches lv_shw_vbeln_txt.
+       ignoring case.
   if sy-subrc eq 0.
+    find first occurrence of regex lc_shw_sipno
+         in is_out-butxt
+         ignoring case
+         submatches lv_shw_dummy lv_shw_vbeln_txt.
+    if sy-subrc ne 0.
+      find first occurrence of regex lc_shw_regex
+           in is_out-butxt
+           ignoring case
+           submatches lv_shw_vbeln_txt.
+    endif.
+  endif.
+  if lv_shw_vbeln_txt is not initial.
     shift lv_shw_vbeln_txt left deleting leading '0'.
     if lv_shw_vbeln_txt is not initial and strlen( lv_shw_vbeln_txt ) le 10.
       lv_shw_vbeln = lv_shw_vbeln_txt.
