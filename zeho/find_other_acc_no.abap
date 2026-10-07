@@ -147,6 +147,18 @@ method find_other_acc_no.
         ls_db_state type ty_db_state.
 *-------------------------------------------------------------------*
 
+*-------------------------------------------------------------------*
+* *- SSH İade süreci
+* *- added by <kullanıcı> 07.10.2026
+*-------------------------------------------------------------------*
+  constants: lc_ssh_regex type string value `(\d+)\s*-?\s*SSH\s*-?\s*[İIıi]ADE`,
+             lc_ssh_xref3 type xref3  value '2301.SSH',
+             lc_ssh_bukrs type bukrs  value '1000'.
+  data: lv_ssh_kunnr_txt type string,
+        lv_ssh_kunnr     type kna1-kunnr,
+        lv_ssh_check     type kna1-kunnr.
+*-------------------------------------------------------------------*
+
 ****************************************-- OPEN --*********************************************
 ******************************-- UYARLAMADAN DAN CARİ/HESAP ARAMA  --**************************
 
@@ -396,6 +408,58 @@ method find_other_acc_no.
             changing
               ch_out  = <fs_out>.
 **-- closed : özel koşul tablosuna ara!!!
+
+**-- Open : SSH İade - metindeki müşteri kodu ile müşteri bul
+*-------------------------------------------------------------------*
+* *- SSH İade süreci: kalem metninde "<müşteri kodu>-SSH İade" geçiyorsa
+* *- (büyük/küçük harf, boşluk ve tire farkları tolere edilir) müşteri
+* *- kodu şirket 1000 için KNB1'de varsa müşteri alanına yazılır,
+* *- bağlantı anlaşması (XREF3) 2301.SSH olarak gelir.
+* *- added by <kullanıcı> 07.10.2026
+*-------------------------------------------------------------------*
+          if ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+          or ( iv_fiori eq abap_true ).
+            if <fs_out>-bukrs eq lc_ssh_bukrs.
+              clear: lv_ssh_kunnr_txt, lv_ssh_kunnr, lv_ssh_check.
+              find first occurrence of regex lc_ssh_regex
+                   in <fs_out>-butxt
+                   ignoring case
+                   submatches lv_ssh_kunnr_txt.
+              if sy-subrc eq 0.
+*-- Baştaki sıfırlar atılıp uzunluk kontrol ediliyor (müşteri no en fazla 10 hane)
+                shift lv_ssh_kunnr_txt left deleting leading '0'.
+                if lv_ssh_kunnr_txt is not initial and strlen( lv_ssh_kunnr_txt ) le 10.
+                  lv_ssh_kunnr = lv_ssh_kunnr_txt.
+                  call function 'CONVERSION_EXIT_ALPHA_INPUT'
+                    exporting
+                      input  = lv_ssh_kunnr
+                    importing
+                      output = lv_ssh_kunnr.
+
+                  select single kunnr from knb1
+                    into lv_ssh_check
+                    where kunnr = lv_ssh_kunnr
+                      and bukrs = <fs_out>-bukrs.
+                  if sy-subrc eq 0.
+                    clear: <fs_out>-lifnr, <fs_out>-saknr.
+                    <fs_out>-kunnr = lv_ssh_kunnr.
+                    <fs_out>-koart = 'D'.
+                    <fs_out>-xref3 = lc_ssh_xref3.
+                    if <fs_out>-blart is initial.
+                      read table mt_t024 into ls_t024 with key koart = 'D'
+                                                               protp = <fs_out>-prtyp.
+                      if sy-subrc eq 0.
+                        <fs_out>-blart = ls_t024-blart.
+                      endif.
+                    endif.
+                    <fs_out>-statu = '4'.
+                  endif.
+                endif.
+              endif.
+            endif.
+          endif.
+*-------------------------------------------------------------------*
+**-- Closed : SSH İade
 
 *      **-- Open : İcra ödemesi - TC kimlik no ile personel satıcısı-----magkas
 *          if <fs_out>-kunnr is initial and <fs_out>-lifnr is initial
