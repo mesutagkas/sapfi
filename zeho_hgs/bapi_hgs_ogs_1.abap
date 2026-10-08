@@ -245,7 +245,12 @@ METHOD bapi_hgs_ogs_1.
 *  <fs_accountgl>-costcenter  = ls_t023-kostl.
   <fs_accountgl>-costcenter  = is_out-kostl.
 *-------------------------------------------------------------------*
-  <fs_accountgl>-tax_code   =  is_out-mwskz.
+*-------------------------------------------------------------------*
+* *- KKEG satırı V4 matrahına girmesin (vergi kodu boş)
+* *- changed by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+*  <fs_accountgl>-tax_code   =  is_out-mwskz.
+*-------------------------------------------------------------------*
 
   APPEND INITIAL LINE TO lt_currencyamount ASSIGNING <fs_currencyamount>.
   <fs_currencyamount>-itemno_acc = lv_item_no.
@@ -295,7 +300,12 @@ METHOD bapi_hgs_ogs_1.
 *  <fs_accountgl>-costcenter  = ls_t023-kostl.
   <fs_accountgl>-costcenter  = is_out-kostl.
 *-------------------------------------------------------------------*
-  <fs_accountgl>-tax_code   =  is_out-mwskz.
+*-------------------------------------------------------------------*
+* *- KKEG satırı V4 matrahına girmesin (vergi kodu boş)
+* *- changed by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+*  <fs_accountgl>-tax_code   =  is_out-mwskz.
+*-------------------------------------------------------------------*
 
   APPEND INITIAL LINE TO lt_currencyamount ASSIGNING <fs_currencyamount>.
   <fs_currencyamount>-itemno_acc = lv_item_no.
