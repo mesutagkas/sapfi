@@ -22,6 +22,11 @@ method find_other_acc_no.
            xblnr  type bkpf-xblnr,
            bktxt  type bkpf-bktxt,                " tam banka referansı (yeni belgeler)
 *-------------------------------------------------------------------*
+* *- Virman karşı bacağı: kalemin belgedeki sırası (1 = banka kalemi)
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+           buzei  type acdoca-buzei,
+*-------------------------------------------------------------------*
          end of ty_acdoca,
          begin of ty_acdoca_kun,
            rbukrs type acdoca-rbukrs,
@@ -145,6 +150,33 @@ method find_other_acc_no.
   data: lt_db_state type sorted table of ty_db_state
                     with non-unique key seqnr bukrs bankc,
         ls_db_state type ty_db_state.
+*-------------------------------------------------------------------*
+
+*-------------------------------------------------------------------*
+* *- Virman karşı bacağı / belge-satır bağları
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+  types: begin of ty_link,
+           bukrs type zeho_t012-bukrs,
+           belnr type zeho_t012-belnr,
+           hkont type zeho_t012-hkont,
+           seqnr type zeho_t012-seqnr,
+         end of ty_link,
+         begin of ty_heal_line,
+           rbukrs type acdoca-rbukrs,
+           gjahr  type acdoca-gjahr,
+           belnr  type acdoca-belnr,
+           racct  type acdoca-racct,
+           buzei  type acdoca-buzei,
+         end of ty_heal_line.
+  data: lt_link       type sorted table of ty_link with non-unique key belnr hkont,
+        lt_heal_key   type standard table of ty_bkpf_ref,
+        lt_heal_line  type standard table of ty_heal_line,
+        ls_heal_line  type ty_heal_line,
+        lv_skip       type abap_bool,
+        lv_heal       type abap_bool,
+        lv_cand_idx   type sy-tabix,
+        lv_link_seqnr type zeho_t012-seqnr.
 *-------------------------------------------------------------------*
 
 *-------------------------------------------------------------------*
@@ -280,7 +312,13 @@ method find_other_acc_no.
     free: lt_acdoca, lt_acdoca_kun.
 
 *-- Banka satırları
-    select rbukrs gjahr belnr racct budat tsl rtcur
+*-------------------------------------------------------------------*
+* *- Kalem sırası (BUZEI) da okunuyor: virman karşı bacağı tespiti
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+*    select rbukrs gjahr belnr racct budat tsl rtcur
+    select rbukrs gjahr belnr buzei racct budat tsl rtcur
+*-------------------------------------------------------------------*
       from acdoca
       into corresponding fields of table lt_acdoca
       for all entries in ct_out
@@ -317,6 +355,20 @@ method find_other_acc_no.
         where bukrs = lt_acdoca-rbukrs
           and belnr = lt_acdoca-belnr
           and gjahr = lt_acdoca-gjahr.
+*-------------------------------------------------------------------*
+
+*-------------------------------------------------------------------*
+* *- Adaylardan hangileri zaten bir EHO satırına bağlı? Aynı banka
+* *- hesabındaki başka bir satıra bağlı belge bu satıra verilmez.
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+      free lt_link.
+      select bukrs belnr hkont seqnr
+        from zeho_t012
+        into table lt_link
+        for all entries in lt_acdoca
+        where bukrs = lt_acdoca-rbukrs
+          and belnr = lt_acdoca-belnr.
 *-------------------------------------------------------------------*
 
 *-- Müşteri / satıcıyı banka satırına taşı
@@ -838,10 +890,28 @@ method find_other_acc_no.
                 exit.                                     " adaylar bitti
               endif.
 
+*-------------------------------------------------------------------*
+* *- Aynı banka hesabındaki başka bir satıra bağlı belge atlanır
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+              lv_cand_idx = sy-tabix.                     " iç döngüden önce saklanıyor
+              clear lv_skip.
+              loop at lt_link transporting no fields
+                   where belnr = ls_acdoca-belnr
+                     and hkont = <fs_out>-hkont
+                     and seqnr <> <fs_out>-seqnr.
+                lv_skip = abap_true.
+                exit.
+              endloop.
+              if lv_skip = abap_true.
+                continue.
+              endif.
+*-------------------------------------------------------------------*
+
 *-- Yeni belge: başlık metni = tam referans. Eski belge (BKTXT boş): XBLNR.
               if ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
               or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ).
-                lv_tabix = sy-tabix.
+                lv_tabix = lv_cand_idx.
                 lv_found = abap_true.
                 exit.
               endif.
@@ -860,21 +930,50 @@ method find_other_acc_no.
                   exit.                                   " adaylar bitti
                 endif.
 
+*-------------------------------------------------------------------*
+* *- Aday olamayacak belgeler atlanır:
+* *- - aynı banka hesabındaki başka bir satıra bağlı belge
+* *- - başka bir EHO hareketinin kendi banka kalemi (EHO belgesi ve
+* *-   1. kalem): o hareketin belgesidir, bu satırın değil
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+                lv_cand_idx = sy-tabix.                   " iç döngüden önce saklanıyor
+                clear lv_skip.
+                loop at lt_link transporting no fields
+                     where belnr = ls_acdoca-belnr
+                       and hkont = <fs_out>-hkont
+                       and seqnr <> <fs_out>-seqnr.
+                  lv_skip = abap_true.
+                  exit.
+                endloop.
+                if lv_skip = abap_false
+                   and ls_acdoca-xblnr cp 'EHO-*'
+                   and ls_acdoca-buzei = '001'.
+                  lv_skip = abap_true.
+                endif.
+                if lv_skip = abap_true.
+                  continue.
+                endif.
+*-------------------------------------------------------------------*
+
                 if <fs_out>-kunnr is not initial.
                   if ls_acdoca-kunnr = <fs_out>-kunnr.    " müşteri tutuyor
-                    lv_tabix = sy-tabix.
+*                    lv_tabix = sy-tabix.
+                    lv_tabix = lv_cand_idx.
                     lv_found = abap_true.
                     exit.
                   endif.
                 elseif <fs_out>-lifnr is not initial.
                   if ls_acdoca-lifnr = <fs_out>-lifnr.    " satıcı tutuyor
-                    lv_tabix = sy-tabix.
+*                    lv_tabix = sy-tabix.
+                    lv_tabix = lv_cand_idx.
                     lv_found = abap_true.
                     exit.
                   endif.
                 else.
                   lv_count = lv_count + 1.                " cari yok: adayları say
-                  lv_tabix = sy-tabix.
+*                  lv_tabix = sy-tabix.
+                  lv_tabix = lv_cand_idx.
                 endif.
               endloop.
 
@@ -905,7 +1004,16 @@ method find_other_acc_no.
             lv_own_doc = xsdbool(
                  ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
               or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
-            if lv_own_doc = abap_true.
+*-------------------------------------------------------------------*
+* *- Virman karşı bacağı: belge başka bir EHO satırından atılmış
+* *- (XBLNR 'EHO-*') ve bu satırın hesabına düşen kalem banka kalemi
+* *- değil (1. kalem olanlar adaylıktan zaten çıkarıldı) → bu hareket de
+* *- EHO'dan muhasebeleşmiştir: statü 5.
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+*            if lv_own_doc = abap_true.
+            if lv_own_doc = abap_true or ls_acdoca-xblnr cp 'EHO-*'.
+*-------------------------------------------------------------------*
               <fs_out>-blart = ls_acdoca-blart.           " rapordaki tür = belgedeki tür
               <fs_out>-statu = cv_05.
 
@@ -958,6 +1066,104 @@ method find_other_acc_no.
 
     endloop.
 
+*-------------------------------------------------------------------*
+* *- Statüsü 7 olan ama belgesi EHO'dan atılmış satırlar statü 5'e
+* *- çekiliyor: satırın kendi belgesi ya da virman karşı bacağı
+* *- (satırın hesabına düşen kalem belgenin 1. kalemi değil). Belge
+* *- aynı banka hesabındaki başka bir satıra bağlıysa dokunulmaz.
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+    free: lt_heal_key, lt_heal_line, lt_bkpf_ref.
+    loop at ct_out assigning <fs_out> where statu  = '7'
+                                        and belnr  is not initial
+                                        and manuel = abap_false.
+      clear ls_bkpf_ref.
+      ls_bkpf_ref-bukrs = <fs_out>-bukrs.
+      ls_bkpf_ref-belnr = <fs_out>-belnr.
+      ls_bkpf_ref-gjahr = <fs_out>-prdat+0(4).
+      append ls_bkpf_ref to lt_heal_key.
+    endloop.
+
+    if lt_heal_key is not initial.
+      select bukrs belnr gjahr blart xblnr bktxt
+        from bkpf
+        into table lt_bkpf_ref
+        for all entries in lt_heal_key
+        where bukrs = lt_heal_key-bukrs
+          and belnr = lt_heal_key-belnr
+          and gjahr = lt_heal_key-gjahr
+          and stblg = space.
+
+      select rbukrs gjahr belnr racct buzei
+        from acdoca
+        into table lt_heal_line
+        for all entries in lt_heal_key
+        where rldnr  = '0L'
+          and rbukrs = lt_heal_key-bukrs
+          and gjahr  = lt_heal_key-gjahr
+          and belnr  = lt_heal_key-belnr.
+
+      loop at ct_out assigning <fs_out> where statu  = '7'
+                                          and belnr  is not initial
+                                          and manuel = abap_false.
+        read table lt_bkpf_ref into ls_bkpf_ref
+             with table key bukrs = <fs_out>-bukrs
+                            belnr = <fs_out>-belnr
+                            gjahr = <fs_out>-prdat+0(4).
+        if sy-subrc ne 0 or ls_bkpf_ref-xblnr np 'EHO-*'.
+          continue.                                   " EHO belgesi değil: 7 kalır
+        endif.
+
+*-- Belge aynı banka hesabındaki başka bir satıra bağlıysa o hareketin belgesidir
+        clear lv_link_seqnr.
+        select single seqnr from zeho_t012
+          into lv_link_seqnr
+          where bukrs = <fs_out>-bukrs
+            and belnr = <fs_out>-belnr
+            and hkont = <fs_out>-hkont
+            and seqnr <> <fs_out>-seqnr.
+        if sy-subrc eq 0.
+          continue.
+        endif.
+
+        clear lv_heal.
+        lv_xblnr_eho = 'EHO-' && <fs_out>-refbk.
+        lv_bktxt_eho = <fs_out>-refbk.
+        if ( ls_bkpf_ref-bktxt is not initial and ls_bkpf_ref-bktxt = lv_bktxt_eho )
+        or ( ls_bkpf_ref-bktxt is initial     and ls_bkpf_ref-xblnr = lv_xblnr_eho ).
+          lv_heal = abap_true.                        " satırın kendi belgesi
+        else.
+*-- Virman karşı bacağı: satırın hesabına düşen kalem 1. kalem değil
+          loop at lt_heal_line into ls_heal_line
+               where rbukrs = <fs_out>-bukrs
+                 and belnr  = <fs_out>-belnr
+                 and racct  = <fs_out>-hkont.
+            if ls_heal_line-buzei ne '001'.
+              lv_heal = abap_true.
+            endif.
+            exit.
+          endloop.
+        endif.
+
+        if lv_heal = abap_true.
+          <fs_out>-blart = ls_bkpf_ref-blart.         " rapordaki tür = belgedeki tür
+          <fs_out>-statu = cv_05.
+
+          clear ls_message.
+          ls_message-msgid = 'ZEHO'.
+          ls_message-msgno = '038'.
+          ls_message-msgty = 'S'.
+          zeho_cl020=>collect_message( is_message = ls_message is_out = <fs_out> ).
+
+          call method zeho_cl020=>update_bank_item(
+            exporting
+              iv_statu = <fs_out>-statu
+            changing
+              cs_out   = <fs_out> ).
+        endif.
+      endloop.
+    endif.
+*-------------------------------------------------------------------*
 
     commit work.
 

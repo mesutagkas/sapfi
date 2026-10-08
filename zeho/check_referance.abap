@@ -38,6 +38,21 @@ method check_referance.
           lv_gjahr      type bkpf-gjahr,
           lv_belnr_t012 type zeho_t012-belnr.
 
+*-------------------------------------------------------------------*
+* *- Virman karşı bacağı kontrolü
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+    types: begin of ty_counter,
+             rbukrs type acdoca-rbukrs,
+             gjahr  type acdoca-gjahr,
+             belnr  type acdoca-belnr,
+             buzei  type acdoca-buzei,
+           end of ty_counter.
+    data: lt_counter type standard table of ty_counter,
+          ls_counter type ty_counter,
+          lv_tsl     type acdoca-tsl.
+*-------------------------------------------------------------------*
+
     clear es_bseg.
     ev_subrc = 4.
 
@@ -101,6 +116,66 @@ method check_referance.
         exit.
       endif.
     endloop.
+*-------------------------------------------------------------------*
+
+*-------------------------------------------------------------------*
+* *- Virman karşı bacağı: bu satırın banka hesabına, başka bir EHO
+* *- satırından atılmış bir belgenin karşı kalemi (1. kalem değil)
+* *- aynı tarih/tutar/para birimiyle düşmüşse hareket zaten
+* *- muhasebeleşmiştir; ikinci bir virman belgesi atılmaz, satır o
+* *- belgeye bağlanır. Aynı hesaptaki başka bir satıra bağlı belge
+* *- (aynı gün aynı tutarlı ikinci virman) atlanır.
+* *- added by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+    if ev_subrc ne 0.
+      lv_tsl = cond #( when is_out-prtyp = '+' then abs( is_out-amount )
+                       else abs( is_out-amount ) * -1 ).
+
+      select a~rbukrs a~gjahr a~belnr a~buzei
+        from acdoca as a
+        inner join bkpf as b
+          on  b~bukrs = a~rbukrs
+          and b~belnr = a~belnr
+          and b~gjahr = a~gjahr
+        into table lt_counter
+        where a~rldnr      = '0L'
+          and a~rbukrs     = is_out-bukrs
+          and a~racct      = is_out-hkont
+          and a~budat      = is_out-prdat
+          and a~tsl        = lv_tsl
+          and a~rtcur      = is_out-waers
+          and a~xreversing = space
+          and a~xreversed  = space
+          and a~buzei      <> '001'
+          and b~xblnr      like 'EHO-%'
+          and b~stblg      = space.
+
+      loop at lt_counter into ls_counter.
+        clear lv_belnr_t012.
+        select single belnr from zeho_t012
+          into lv_belnr_t012
+          where bukrs = ls_counter-rbukrs
+            and belnr = ls_counter-belnr
+            and hkont = is_out-hkont
+            and seqnr <> is_out-seqnr.
+        if sy-subrc = 0.
+          continue.
+        endif.
+
+        clear ls_bseg.
+        select single * from bseg
+          into ls_bseg
+          where bukrs = ls_counter-rbukrs
+            and belnr = ls_counter-belnr
+            and gjahr = ls_counter-gjahr
+            and buzei = ls_counter-buzei.
+        if sy-subrc = 0.
+          es_bseg  = ls_bseg.
+          ev_subrc = 0.
+          exit.
+        endif.
+      endloop.
+    endif.
 *-------------------------------------------------------------------*
 
 *    lv_srtlen = lv_srt_1 = lv_srt_2 = 0.
