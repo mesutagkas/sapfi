@@ -238,7 +238,13 @@ METHOD bapi_hgs_ogs_1.
   <fs_accountgl>-item_text   = is_out-butxt .
   <fs_accountgl>-comp_code   = is_out-bukrs.
   <fs_accountgl>-bus_area    = is_out-gsber.
-  <fs_accountgl>-costcenter  = ls_t023-kostl.
+*-------------------------------------------------------------------*
+* *- KKEG satırı da plakanın masraf yerine (ZEHO_T022) yazılır
+* *- changed by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+*  <fs_accountgl>-costcenter  = ls_t023-kostl.
+  <fs_accountgl>-costcenter  = is_out-kostl.
+*-------------------------------------------------------------------*
   <fs_accountgl>-tax_code   =  is_out-mwskz.
 
   APPEND INITIAL LINE TO lt_currencyamount ASSIGNING <fs_currencyamount>.
@@ -282,7 +288,13 @@ METHOD bapi_hgs_ogs_1.
   <fs_accountgl>-item_text   = is_out-butxt .
   <fs_accountgl>-comp_code   = is_out-bukrs.
   <fs_accountgl>-bus_area    = is_out-gsber.
-  <fs_accountgl>-costcenter  = ls_t023-kostl.
+*-------------------------------------------------------------------*
+* *- KKEG satırı da plakanın masraf yerine (ZEHO_T022) yazılır
+* *- changed by <kullanıcı> 08.10.2026
+*-------------------------------------------------------------------*
+*  <fs_accountgl>-costcenter  = ls_t023-kostl.
+  <fs_accountgl>-costcenter  = is_out-kostl.
+*-------------------------------------------------------------------*
   <fs_accountgl>-tax_code   =  is_out-mwskz.
 
   APPEND INITIAL LINE TO lt_currencyamount ASSIGNING <fs_currencyamount>.
