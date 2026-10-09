@@ -53,7 +53,7 @@ method find_other_acc_no.
            blart type bkpf-blart,
            xblnr type bkpf-xblnr,
            bktxt type bkpf-bktxt,
-           tcode type bkpf-tcode,
+           tcode type bkpf-tcode,                 " EHO izi - added by <kullanıcı> 09.10.2026
          end of ty_bkpf_ref.
 *-------------------------------------------------------------------*
 
@@ -220,8 +220,12 @@ method find_other_acc_no.
 * *- added by <kullanıcı> 07.10.2026
 *-------------------------------------------------------------------*
   constants: lc_shw_blart type blart  value 'MN'.
-*-- EHO muhasebeleştirme işlem kodu (belgenin EHO'dan atıldığının izi)
+*-------------------------------------------------------------------*
+* *- EHO muhasebeleştirme işlem kodu (belgenin EHO'dan atıldığının izi)
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
   constants: lc_eho_tcode type bkpf-tcode value 'ZEHO003'.
+*-------------------------------------------------------------------*
   data: lv_shw_found     type abap_bool,
         lv_shw_vbeln_txt type string,
         lv_shw_vbeln     type vbak-vbeln,
@@ -364,7 +368,8 @@ method find_other_acc_no.
 * *- added by <kullanıcı> 06.10.2026
 *-------------------------------------------------------------------*
       free lt_bkpf_ref.
-      select bukrs belnr gjahr blart xblnr bktxt tcode
+*      select bukrs belnr gjahr blart xblnr bktxt
+      select bukrs belnr gjahr blart xblnr bktxt tcode   " TCODE - added by <kullanıcı> 09.10.2026
         from bkpf
         into table lt_bkpf_ref
         for all entries in lt_acdoca
@@ -411,7 +416,7 @@ method find_other_acc_no.
           <fs_acdoca>-blart = ls_bkpf_ref-blart.
           <fs_acdoca>-xblnr = ls_bkpf_ref-xblnr.
           <fs_acdoca>-bktxt = ls_bkpf_ref-bktxt.
-          <fs_acdoca>-tcode = ls_bkpf_ref-tcode.
+          <fs_acdoca>-tcode = ls_bkpf_ref-tcode.     " added by <kullanıcı> 09.10.2026
         endif.
 *-------------------------------------------------------------------*
       endloop.
@@ -949,17 +954,22 @@ method find_other_acc_no.
 *-------------------------------------------------------------------*
 
 *-- Yeni belge: başlık metni = tam referans. Eski belge (BKTXT boş): XBLNR.
-*-- (Banka referansı boşsa kendi belgesi tanınamaz: EHO-... tekil olmaz)
+*              if ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
+*              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ).
 *-------------------------------------------------------------------*
-* *- Belge EHO'dan atılmış olmalı: XBLNR 'EHO-*' ya da işlem kodu
-* *- ZEHO003. Elle atılan belgenin başlık metnine de banka referansı
-* *- yazılabiliyor; o belge bu satırın EHO belgesi sayılmaz.
+* *- Kendi belgesi sayılmak için:
+* *- - belge EHO'dan atılmış olmalı (XBLNR 'EHO-*' ya da işlem kodu
+* *-   ZEHO003); elle atılan belgenin başlık metnine de banka
+* *-   referansı yazılabiliyor
+* *- - banka referansı dolu olmalı (boşsa 'EHO-' her boş referanslı
+* *-   satırın belgesiyle eşleşir)
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
               if <fs_out>-refbk is not initial
                  and ( ls_acdoca-xblnr cp 'EHO-*' or ls_acdoca-tcode = lc_eho_tcode )
                  and ( ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
                     or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
+*-------------------------------------------------------------------*
                 lv_tabix = lv_cand_idx.
                 lv_found = abap_true.
                 exit.
@@ -1050,14 +1060,19 @@ method find_other_acc_no.
 * *- yazılamamış demektir; burada tamamlanıyor.
 * *- added by <kullanıcı> 06.10.2026
 *-------------------------------------------------------------------*
-*            lv_own_doc = xsdbool( <fs_out>-refbk is not initial and (
+*            lv_own_doc = xsdbool(
 *                 ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
-*              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ) ).
-*-- EHO izi (XBLNR 'EHO-*' / TCODE ZEHO003) şartı - added by <kullanıcı> 09.10.2026
+*              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
+*-------------------------------------------------------------------*
+* *- Kendi belgesi için EHO izi ve dolu banka referansı şartı
+* *- (yukarıdaki arama ile aynı kural)
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
             lv_own_doc = xsdbool( <fs_out>-refbk is not initial
               and ( ls_acdoca-xblnr cp 'EHO-*' or ls_acdoca-tcode = lc_eho_tcode )
               and ( ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
                  or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ) ).
+*-------------------------------------------------------------------*
 *-------------------------------------------------------------------*
 * *- Virman karşı bacağı: belge başka bir EHO satırından atılmış
 * *- (XBLNR 'EHO-*') ve bu satırın hesabına düşen kalem banka kalemi
@@ -1139,7 +1154,7 @@ method find_other_acc_no.
     endloop.
 
     if lt_heal_key is not initial.
-      select bukrs belnr gjahr blart xblnr bktxt tcode
+      select bukrs belnr gjahr blart xblnr bktxt
         from bkpf
         into table lt_bkpf_ref
         for all entries in lt_heal_key
@@ -1183,9 +1198,8 @@ method find_other_acc_no.
         clear lv_heal.
         lv_xblnr_eho = 'EHO-' && <fs_out>-refbk.
         lv_bktxt_eho = <fs_out>-refbk.
-        if <fs_out>-refbk is not initial
-           and ( ( ls_bkpf_ref-bktxt is not initial and ls_bkpf_ref-bktxt = lv_bktxt_eho )
-              or ( ls_bkpf_ref-bktxt is initial     and ls_bkpf_ref-xblnr = lv_xblnr_eho ) ).
+        if ( ls_bkpf_ref-bktxt is not initial and ls_bkpf_ref-bktxt = lv_bktxt_eho )
+        or ( ls_bkpf_ref-bktxt is initial     and ls_bkpf_ref-xblnr = lv_xblnr_eho ).
           lv_heal = abap_true.                        " satırın kendi belgesi
         else.
 *-- Virman karşı bacağı: satırın hesabına düşen kalem 1. kalem değil
