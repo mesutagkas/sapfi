@@ -21,12 +21,14 @@
                     and gjahr = ls_bseg-gjahr.
                 if sy-subrc = 0 and lv_tcode_ref <> 'ZEHO003'.
                   ls_t012-statu = '7'.
+                  <fs_out>-icon = '@L5@'.                 " dışarıdan muhasebeleşmiş
                 else.
                   ls_t012-statu = '5'.
+                  <fs_out>-icon = '@08@'.
                 endif.
                 <fs_out>-statu = ls_t012-statu.
 *-------------------------------------------------------------------*
-                <fs_out>-icon     = '@08@'.
+*                <fs_out>-icon     = '@08@'.
                 <fs_out>-belnr = ls_bseg-belnr.
                 modify zeho_t012 from ls_t012.
                 message s038(zeho) display like 'S'.
