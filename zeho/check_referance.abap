@@ -29,7 +29,10 @@ method check_referance.
              gjahr type bkpf-gjahr,
              xblnr type bkpf-xblnr,
              bktxt type bkpf-bktxt,
+             tcode type bkpf-tcode,
            end of ty_bkpf_ref.
+*-- EHO muhasebeleştirme işlem kodu (belgenin EHO'dan atıldığının izi)
+    constants lc_eho_tcode type bkpf-tcode value 'ZEHO003'.
 
     data: lt_bkpf_ref   type standard table of ty_bkpf_ref,
           ls_bkpf_ref   type ty_bkpf_ref,
@@ -67,7 +70,7 @@ method check_referance.
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
     if is_out-refbk is not initial.
-      select bukrs belnr gjahr xblnr bktxt
+      select bukrs belnr gjahr xblnr bktxt tcode
         from bkpf
         into table lt_bkpf_ref
         where bukrs = is_out-bukrs
@@ -88,6 +91,17 @@ method check_referance.
       elseif ls_bkpf_ref-xblnr <> lv_xblnr.
         continue.
       endif.
+
+*-------------------------------------------------------------------*
+* *- Belge EHO'dan atılmış olmalı (XBLNR 'EHO-*' ya da işlem kodu
+* *- ZEHO003). Elle atılan belgenin başlık metnine de banka referansı
+* *- yazılabiliyor; o belge bu satırın EHO belgesi sayılmaz.
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
+      if ls_bkpf_ref-xblnr np 'EHO-*' and ls_bkpf_ref-tcode <> lc_eho_tcode.
+        continue.
+      endif.
+*-------------------------------------------------------------------*
 
 *-- Başka bir EHO satırına bağlı belge bu satırın olamaz. Bu satırın
 *-- kendisi (SEQNR aynı) hariç tutuluyor: belge başka bir oturumda bu
