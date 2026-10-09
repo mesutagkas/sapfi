@@ -460,11 +460,8 @@ method find_other_acc_no.
 *-- Muhasebeleşmiş ama statüsü güncellenmemiş
 *        <fs_out>-statu = cv_05.
 *-------------------------------------------------------------------*
-* *- BELNR doluysa belge kontrol ediliyor. Önceden belge kimden atılmış
-* *- olursa olsun statü 5 veriliyordu; EHO dışından atılan belge de 5
-* *- görünüyordu. EHO'dan atılmışsa (işlem kodu ZEHO003) statü 5,
-* *- değilse 7. Belge bulunamazsa eski davranış (5). Referans (XBLNR)
-* *- ölçüt değil: dışarıdan atılan belgede de 'EHO-...' olabiliyor.
+* *- BELNR dolu satır açık statüde (1-4) kalamaz. Belgenin işlem kodu
+* *- ZEHO003 ise statü 5, değilse (dışarıdan atılmış) 7.
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
         clear ls_bkpf_chk.
@@ -477,9 +474,12 @@ method find_other_acc_no.
             and gjahr = lv_gjahr_chk.
         if sy-subrc = 0
            and ls_bkpf_chk-tcode <> lc_eho_tcode.
-          <fs_out>-statu = '7'.                         " EHO dışı belge
+          <fs_out>-statu = '7'.                         " dışarıdan atılmış
         else.
-          <fs_out>-statu = cv_05.
+          if sy-subrc = 0.
+            <fs_out>-blart = ls_bkpf_chk-blart.         " rapordaki tür = belgedeki tür
+          endif.
+          <fs_out>-statu = cv_05.                       " EHO'dan atılmış
         endif.
 *-------------------------------------------------------------------*
 
@@ -1070,15 +1070,6 @@ method find_other_acc_no.
 *                 ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
 *              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
 *-------------------------------------------------------------------*
-* *- Kendi belgesi için EHO izi (işlem kodu ZEHO003) şartı
-* *- (yukarıdaki arama ile aynı kural)
-* *- added by <kullanıcı> 09.10.2026
-*-------------------------------------------------------------------*
-            lv_own_doc = xsdbool( ls_acdoca-tcode = lc_eho_tcode
-              and ( ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
-                 or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ) ).
-*-------------------------------------------------------------------*
-*-------------------------------------------------------------------*
 * *- Virman karşı bacağı: belge başka bir EHO satırından atılmış
 * *- (XBLNR 'EHO-*') ve bu satırın hesabına düşen kalem banka kalemi
 * *- değil (1. kalem olanlar adaylıktan zaten çıkarıldı) → bu hareket de
@@ -1087,8 +1078,14 @@ method find_other_acc_no.
 *-------------------------------------------------------------------*
 *            if lv_own_doc = abap_true.
 *            if lv_own_doc = abap_true or ls_acdoca-xblnr cp 'EHO-*'.
-*-- EHO belgesi işlem kodundan tanınıyor - added by <kullanıcı> 09.10.2026
-            if lv_own_doc = abap_true or ls_acdoca-tcode = lc_eho_tcode.
+*-------------------------------------------------------------------*
+* *- Statü sadece belgenin işlem kodundan: ZEHO003 ise 5 (satırın kendi
+* *- belgesi ya da virman karşı bacağı), değilse dışarıdan atılmış: 7.
+* *- Referans (XBLNR) ölçüt değil; dışarıdan atılan belgede de 'EHO-...'
+* *- olabiliyor.
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
+            if ls_acdoca-tcode = lc_eho_tcode.
 *-------------------------------------------------------------------*
               <fs_out>-blart = ls_acdoca-blart.           " rapordaki tür = belgedeki tür
               <fs_out>-statu = cv_05.
@@ -1141,6 +1138,43 @@ method find_other_acc_no.
           cs_out   = <fs_out> ).
 
     endloop.
+
+*-------------------------------------------------------------------*
+* *- Son kontrol: BELNR dolu satır açık statüde (1-4) kalamaz (hata
+* *- durumu). Yukarıdaki döngüye girmeyen satırlar (ör. manuel) da
+* *- düzeltiliyor: belgenin işlem kodu ZEHO003 ise 5, değilse 7.
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
+    loop at ct_out assigning <fs_out> where belnr is not initial
+                                        and ( statu = cv_01
+                                           or statu = cv_02
+                                           or statu = cv_03
+                                           or statu = cv_04 ).
+      clear ls_bkpf_chk.
+      lv_gjahr_chk = <fs_out>-prdat+0(4).
+      select single bukrs belnr gjahr blart xblnr bktxt tcode
+        from bkpf
+        into ls_bkpf_chk
+        where bukrs = <fs_out>-bukrs
+          and belnr = <fs_out>-belnr
+          and gjahr = lv_gjahr_chk.
+      if sy-subrc = 0
+         and ls_bkpf_chk-tcode <> lc_eho_tcode.
+        <fs_out>-statu = '7'.                           " dışarıdan atılmış
+      else.
+        if sy-subrc = 0.
+          <fs_out>-blart = ls_bkpf_chk-blart.           " rapordaki tür = belgedeki tür
+        endif.
+        <fs_out>-statu = cv_05.                         " EHO'dan atılmış
+      endif.
+
+      call method zeho_cl020=>update_bank_item(
+        exporting
+          iv_statu = <fs_out>-statu
+        changing
+          cs_out   = <fs_out> ).
+    endloop.
+*-------------------------------------------------------------------*
 
 *-------------------------------------------------------------------*
 * *- Statüsü 7 olan ama belgesi EHO'dan atılmış satırlar statü 5'e
