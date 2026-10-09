@@ -909,8 +909,10 @@ method find_other_acc_no.
 *-------------------------------------------------------------------*
 
 *-- Yeni belge: başlık metni = tam referans. Eski belge (BKTXT boş): XBLNR.
-              if ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
-              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ).
+*-- (Banka referansı boşsa kendi belgesi tanınamaz: EHO-... tekil olmaz)
+              if <fs_out>-refbk is not initial
+                 and ( ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
+                    or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
                 lv_tabix = lv_cand_idx.
                 lv_found = abap_true.
                 exit.
@@ -1001,9 +1003,9 @@ method find_other_acc_no.
 * *- yazılamamış demektir; burada tamamlanıyor.
 * *- added by <kullanıcı> 06.10.2026
 *-------------------------------------------------------------------*
-            lv_own_doc = xsdbool(
+            lv_own_doc = xsdbool( <fs_out>-refbk is not initial and (
                  ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
-              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
+              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ) ).
 *-------------------------------------------------------------------*
 * *- Virman karşı bacağı: belge başka bir EHO satırından atılmış
 * *- (XBLNR 'EHO-*') ve bu satırın hesabına düşen kalem banka kalemi
@@ -1129,8 +1131,9 @@ method find_other_acc_no.
         clear lv_heal.
         lv_xblnr_eho = 'EHO-' && <fs_out>-refbk.
         lv_bktxt_eho = <fs_out>-refbk.
-        if ( ls_bkpf_ref-bktxt is not initial and ls_bkpf_ref-bktxt = lv_bktxt_eho )
-        or ( ls_bkpf_ref-bktxt is initial     and ls_bkpf_ref-xblnr = lv_xblnr_eho ).
+        if <fs_out>-refbk is not initial
+           and ( ( ls_bkpf_ref-bktxt is not initial and ls_bkpf_ref-bktxt = lv_bktxt_eho )
+              or ( ls_bkpf_ref-bktxt is initial     and ls_bkpf_ref-xblnr = lv_xblnr_eho ) ).
           lv_heal = abap_true.                        " satırın kendi belgesi
         else.
 *-- Virman karşı bacağı: satırın hesabına düşen kalem 1. kalem değil

@@ -61,14 +61,22 @@ method check_referance.
     lv_gjahr = is_out-prdat+0(4).
 
 *-- Aynı gün, aynı referansla atılmış ve ters çevrilmemiş tüm belgeler
-    select bukrs belnr gjahr xblnr bktxt
-      from bkpf
-      into table lt_bkpf_ref
-      where bukrs = is_out-bukrs
-        and gjahr = lv_gjahr
-        and bldat = is_out-prdat
-        and ( xblnr = lv_xblnr or bktxt = lv_bktxt )
-        and stblg = space.
+*-------------------------------------------------------------------*
+* *- Banka referansı boşsa referansla arama yapılmıyor: boş başlık
+* *- metni o günün başlık metni boş tüm belgeleriyle eşleşiyordu.
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
+    if is_out-refbk is not initial.
+      select bukrs belnr gjahr xblnr bktxt
+        from bkpf
+        into table lt_bkpf_ref
+        where bukrs = is_out-bukrs
+          and gjahr = lv_gjahr
+          and bldat = is_out-prdat
+          and ( xblnr = lv_xblnr or bktxt = lv_bktxt )
+          and stblg = space.
+    endif.
+*-------------------------------------------------------------------*
 
     loop at lt_bkpf_ref into ls_bkpf_ref.
 
