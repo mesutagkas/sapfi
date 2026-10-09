@@ -142,6 +142,14 @@ method find_other_acc_no.
 *-------------------------------------------------------------------*
 
 *-------------------------------------------------------------------*
+* *- BELNR dolu gelen satırın belgesini kontrol için
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
+  data: ls_bkpf_chk  type ty_bkpf_ref,
+        lv_gjahr_chk type bkpf-gjahr.
+*-------------------------------------------------------------------*
+
+*-------------------------------------------------------------------*
 * *- DB'deki güncel statü / belge numarası (başka oturumda
 * *- muhasebeleşmiş satırın eski haliyle ezilmemesi için)
 * *- added by <kullanıcı> 06.10.2026
@@ -445,7 +453,30 @@ method find_other_acc_no.
 
       if <fs_out>-belnr is not initial.
 *-- Muhasebeleşmiş ama statüsü güncellenmemiş
-        <fs_out>-statu = cv_05.
+*        <fs_out>-statu = cv_05.
+*-------------------------------------------------------------------*
+* *- BELNR doluysa belge kontrol ediliyor. Önceden belge kimden atılmış
+* *- olursa olsun statü 5 veriliyordu; EHO dışından atılan belge de 5
+* *- görünüyordu. EHO'dan atılmışsa (XBLNR 'EHO-*' ya da işlem kodu
+* *- ZEHO003) statü 5, değilse 7. Belge bulunamazsa eski davranış (5).
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
+        clear ls_bkpf_chk.
+        lv_gjahr_chk = <fs_out>-prdat+0(4).
+        select single bukrs belnr gjahr blart xblnr bktxt tcode
+          from bkpf
+          into ls_bkpf_chk
+          where bukrs = <fs_out>-bukrs
+            and belnr = <fs_out>-belnr
+            and gjahr = lv_gjahr_chk.
+        if sy-subrc = 0
+           and ls_bkpf_chk-xblnr np 'EHO-*'
+           and ls_bkpf_chk-tcode <> lc_eho_tcode.
+          <fs_out>-statu = '7'.                         " EHO dışı belge
+        else.
+          <fs_out>-statu = cv_05.
+        endif.
+*-------------------------------------------------------------------*
 
 
       else.
