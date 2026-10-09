@@ -961,12 +961,12 @@ method find_other_acc_no.
 * *- - belge EHO'dan atılmış olmalı (işlem kodu ZEHO003); dışarıdan
 * *-   atılan belgenin referansında da 'EHO-...' ya da başlık metninde
 * *-   banka referansı olabiliyor
-* *- - banka referansı dolu olmalı (boşsa 'EHO-' her boş referanslı
-* *-   satırın belgesiyle eşleşir)
+* *- - referans eşleşmesi aynen korunuyor; banka referansı boş satırda
+* *-   EHO belgesinin referansı 'EHO-' olur, o da kendi belgesi sayılır
+* *-   (adaylar zaten aynı hesap/tarih/tutar ve başka satıra bağlı değil)
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
-              if <fs_out>-refbk is not initial
-                 and ls_acdoca-tcode = lc_eho_tcode
+              if ls_acdoca-tcode = lc_eho_tcode
                  and ( ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
                     or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
 *-------------------------------------------------------------------*
@@ -1070,12 +1070,11 @@ method find_other_acc_no.
 *                 ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
 *              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
 *-------------------------------------------------------------------*
-* *- Kendi belgesi için EHO izi ve dolu banka referansı şartı
+* *- Kendi belgesi için EHO izi (işlem kodu ZEHO003) şartı
 * *- (yukarıdaki arama ile aynı kural)
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
-            lv_own_doc = xsdbool( <fs_out>-refbk is not initial
-              and ls_acdoca-tcode = lc_eho_tcode
+            lv_own_doc = xsdbool( ls_acdoca-tcode = lc_eho_tcode
               and ( ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
                  or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ) ).
 *-------------------------------------------------------------------*
