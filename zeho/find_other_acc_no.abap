@@ -462,8 +462,9 @@ method find_other_acc_no.
 *-------------------------------------------------------------------*
 * *- BELNR doluysa belge kontrol ediliyor. Önceden belge kimden atılmış
 * *- olursa olsun statü 5 veriliyordu; EHO dışından atılan belge de 5
-* *- görünüyordu. EHO'dan atılmışsa (XBLNR 'EHO-*' ya da işlem kodu
-* *- ZEHO003) statü 5, değilse 7. Belge bulunamazsa eski davranış (5).
+* *- görünüyordu. EHO'dan atılmışsa (işlem kodu ZEHO003) statü 5,
+* *- değilse 7. Belge bulunamazsa eski davranış (5). Referans (XBLNR)
+* *- ölçüt değil: dışarıdan atılan belgede de 'EHO-...' olabiliyor.
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
         clear ls_bkpf_chk.
@@ -475,7 +476,6 @@ method find_other_acc_no.
             and belnr = <fs_out>-belnr
             and gjahr = lv_gjahr_chk.
         if sy-subrc = 0
-           and ls_bkpf_chk-xblnr np 'EHO-*'
            and ls_bkpf_chk-tcode <> lc_eho_tcode.
           <fs_out>-statu = '7'.                         " EHO dışı belge
         else.
@@ -958,15 +958,15 @@ method find_other_acc_no.
 *              or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ).
 *-------------------------------------------------------------------*
 * *- Kendi belgesi sayılmak için:
-* *- - belge EHO'dan atılmış olmalı (XBLNR 'EHO-*' ya da işlem kodu
-* *-   ZEHO003); elle atılan belgenin başlık metnine de banka
-* *-   referansı yazılabiliyor
+* *- - belge EHO'dan atılmış olmalı (işlem kodu ZEHO003); dışarıdan
+* *-   atılan belgenin referansında da 'EHO-...' ya da başlık metninde
+* *-   banka referansı olabiliyor
 * *- - banka referansı dolu olmalı (boşsa 'EHO-' her boş referanslı
 * *-   satırın belgesiyle eşleşir)
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
               if <fs_out>-refbk is not initial
-                 and ( ls_acdoca-xblnr cp 'EHO-*' or ls_acdoca-tcode = lc_eho_tcode )
+                 and ls_acdoca-tcode = lc_eho_tcode
                  and ( ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
                     or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ).
 *-------------------------------------------------------------------*
@@ -1005,8 +1005,14 @@ method find_other_acc_no.
                   lv_skip = abap_true.
                   exit.
                 endloop.
+*-------------------------------------------------------------------*
+* *- EHO belgesi işlem kodundan (ZEHO003) tanınıyor; dışarıdan atılan
+* *- belgenin referansında da 'EHO-...' olabiliyor.
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
                 if lv_skip = abap_false
-                   and ls_acdoca-xblnr cp 'EHO-*'
+*                   and ls_acdoca-xblnr cp 'EHO-*'
+                   and ls_acdoca-tcode = lc_eho_tcode
                    and ls_acdoca-buzei = '001'.
                   lv_skip = abap_true.
                 endif.
@@ -1069,7 +1075,7 @@ method find_other_acc_no.
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
             lv_own_doc = xsdbool( <fs_out>-refbk is not initial
-              and ( ls_acdoca-xblnr cp 'EHO-*' or ls_acdoca-tcode = lc_eho_tcode )
+              and ls_acdoca-tcode = lc_eho_tcode
               and ( ( ls_acdoca-bktxt is not initial and ls_acdoca-bktxt = lv_bktxt_eho )
                  or ( ls_acdoca-bktxt is initial     and ls_acdoca-xblnr = lv_xblnr_eho ) ) ).
 *-------------------------------------------------------------------*
@@ -1081,7 +1087,9 @@ method find_other_acc_no.
 * *- added by <kullanıcı> 08.10.2026
 *-------------------------------------------------------------------*
 *            if lv_own_doc = abap_true.
-            if lv_own_doc = abap_true or ls_acdoca-xblnr cp 'EHO-*'.
+*            if lv_own_doc = abap_true or ls_acdoca-xblnr cp 'EHO-*'.
+*-- EHO belgesi işlem kodundan tanınıyor - added by <kullanıcı> 09.10.2026
+            if lv_own_doc = abap_true or ls_acdoca-tcode = lc_eho_tcode.
 *-------------------------------------------------------------------*
               <fs_out>-blart = ls_acdoca-blart.           " rapordaki tür = belgedeki tür
               <fs_out>-statu = cv_05.
@@ -1154,7 +1162,8 @@ method find_other_acc_no.
     endloop.
 
     if lt_heal_key is not initial.
-      select bukrs belnr gjahr blart xblnr bktxt
+*      select bukrs belnr gjahr blart xblnr bktxt
+      select bukrs belnr gjahr blart xblnr bktxt tcode   " TCODE - added by <kullanıcı> 09.10.2026
         from bkpf
         into table lt_bkpf_ref
         for all entries in lt_heal_key
@@ -1179,7 +1188,13 @@ method find_other_acc_no.
              with table key bukrs = <fs_out>-bukrs
                             belnr = <fs_out>-belnr
                             gjahr = <fs_out>-prdat+0(4).
-        if sy-subrc ne 0 or ls_bkpf_ref-xblnr np 'EHO-*'.
+*        if sy-subrc ne 0 or ls_bkpf_ref-xblnr np 'EHO-*'.
+*-------------------------------------------------------------------*
+* *- EHO belgesi işlem kodundan (ZEHO003) tanınıyor; dışarıdan atılan
+* *- belgenin referansında da 'EHO-...' olabiliyor, o satır 7 kalmalı.
+* *- added by <kullanıcı> 09.10.2026
+*-------------------------------------------------------------------*
+        if sy-subrc ne 0 or ls_bkpf_ref-tcode <> lc_eho_tcode.
           continue.                                   " EHO belgesi değil: 7 kalır
         endif.
 

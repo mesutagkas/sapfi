@@ -93,12 +93,12 @@ method check_referance.
       endif.
 
 *-------------------------------------------------------------------*
-* *- Belge EHO'dan atılmış olmalı (XBLNR 'EHO-*' ya da işlem kodu
-* *- ZEHO003). Elle atılan belgenin başlık metnine de banka referansı
-* *- yazılabiliyor; o belge bu satırın EHO belgesi sayılmaz.
+* *- Belge EHO'dan atılmış olmalı (işlem kodu ZEHO003). Dışarıdan
+* *- atılan belgenin referansında da 'EHO-...' ya da başlık metninde
+* *- banka referansı olabiliyor; o belge bu satırın EHO belgesi sayılmaz.
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
-      if ls_bkpf_ref-xblnr np 'EHO-*' and ls_bkpf_ref-tcode <> lc_eho_tcode.
+      if ls_bkpf_ref-tcode <> lc_eho_tcode.
         continue.
       endif.
 *-------------------------------------------------------------------*
@@ -169,7 +169,8 @@ method check_referance.
           and a~xreversing = space
           and a~xreversed  = space
           and a~buzei      <> '001'
-          and b~xblnr      like 'EHO-%'
+*          and b~xblnr      like 'EHO-%'
+          and b~tcode      = lc_eho_tcode         " EHO belgesi - added by <kullanıcı> 09.10.2026
           and b~stblg      = space.
 
       loop at lt_counter into ls_counter.

@@ -15,7 +15,6 @@
           lv_db_belnr type zeho_t012-belnr,
           lv_gjahr    type bkpf-gjahr,
           lv_stblg    type bkpf-stblg,
-          lv_xblnr    type bkpf-xblnr,
           lv_tcode    type bkpf-tcode.
 *-------------------------------------------------------------------*
 
@@ -44,7 +43,7 @@
 * *-    edildiyse (BKPF-STBLG dolu) güncelleme normal yapılır.
 * *- 2) BELNR doluyken statü 1-4 yazılmaz. DB'de aynı belgeyle 5/7
 * *-    varsa o korunur; yoksa belgeye bakılır: EHO'dan atılmışsa
-* *-    (XBLNR 'EHO-*' / TCODE ZEHO003) 5, değilse 7.
+* *-    (işlem kodu ZEHO003) 5, değilse 7.
 * *- added by <kullanıcı> 09.10.2026
 *-------------------------------------------------------------------*
     lv_statu = iv_statu.
@@ -89,14 +88,13 @@
          and ( lv_db_statu = '5' or lv_db_statu = '7' ).
         lv_statu = lv_db_statu.
       else.
-        clear: lv_xblnr, lv_tcode.
-        select single xblnr tcode from bkpf
-          into (lv_xblnr, lv_tcode)
+        clear lv_tcode.
+        select single tcode from bkpf
+          into lv_tcode
           where bukrs = cs_out-bukrs
             and belnr = cs_out-belnr
             and gjahr = lv_gjahr.
         if sy-subrc = 0
-           and lv_xblnr np 'EHO-*'
            and lv_tcode <> lc_eho_tcode.
           lv_statu = '7'.                             " EHO dışı belge
         else.
