@@ -626,6 +626,210 @@
           }
         }
       ]
+    },
+    {
+      "name": "5 - Temizlik (ilk iki çalıştırmanın açık iş akışları)",
+      "description": "İmzacı muhasebe@ekergida.com.tr ile açılan 6 test iş akışını iptal eder. Yalnızca bu klasörü çalıştırın.",
+      "item": [
+        {
+          "name": "Cancel 1. çalıştırma A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"CancelledBy\": \"{{startedBy}}\",\n  \"CancellationReason\": \"SAP entegrasyon testi - yanlış imzacıyla açılan test iş akışı\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CancelWorkflow?workflowUuid=c44c4eba-5235-41f5-9a57-14cf9b965c1a"
+          }
+        },
+        {
+          "name": "Cancel 1. çalıştırma B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"CancelledBy\": \"{{startedBy}}\",\n  \"CancellationReason\": \"SAP entegrasyon testi - yanlış imzacıyla açılan test iş akışı\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CancelWorkflow?workflowUuid=9274e6c8-a34c-4f51-9aa5-dd3c1586f544"
+          }
+        },
+        {
+          "name": "Cancel 1. çalıştırma C",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"CancelledBy\": \"{{startedBy}}\",\n  \"CancellationReason\": \"SAP entegrasyon testi - yanlış imzacıyla açılan test iş akışı\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CancelWorkflow?workflowUuid=d93e22c0-fe6c-4591-ae8c-8b6d7b919d48"
+          }
+        },
+        {
+          "name": "Cancel 2. çalıştırma A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"CancelledBy\": \"{{startedBy}}\",\n  \"CancellationReason\": \"SAP entegrasyon testi - yanlış imzacıyla açılan test iş akışı\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CancelWorkflow?workflowUuid=ce8f6c77-de6d-41d5-81ad-8efd3af96d42"
+          }
+        },
+        {
+          "name": "Cancel 2. çalıştırma B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"CancelledBy\": \"{{startedBy}}\",\n  \"CancellationReason\": \"SAP entegrasyon testi - yanlış imzacıyla açılan test iş akışı\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CancelWorkflow?workflowUuid=154c685a-6550-4366-a9ab-153c8532f3bb"
+          }
+        },
+        {
+          "name": "Cancel 2. çalıştırma C",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"CancelledBy\": \"{{startedBy}}\",\n  \"CancellationReason\": \"SAP entegrasyon testi - yanlış imzacıyla açılan test iş akışı\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CancelWorkflow?workflowUuid=03c81d87-8bc9-44d8-a929-78cd6f1ee9e3"
+          }
+        }
+      ]
     }
   ]
 }
