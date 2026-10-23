@@ -9,7 +9,7 @@ Portalda müşteri tarafından onaylanan mutabakat formlarını ArkSigner'a (KIP
 |---|---|---|
 | boş | İşlem yapılmıyor | – |
 | 1 | E-imza işlemi için işlem bekliyor | Portal – gönderim ekranı (cari `ZEM_T015_EIMZA`'da ise) |
-| 2 | E-imza gönderildi | Portal – müşteri onayında; **ZEM_P022** – ArkSigner'a başarılı gönderimde |
+| 2 | E-imza gönderildi | Portal (`ZEM_F002_03`, `confirm` / `eimza` istekleri) – yanıtta 1 → 2, aynı FORMN+SEQNO satırında; **ZEM_P022** – ArkSigner'a başarılı gönderimde |
 | 3 | E-imza gönderiminde hata alındı | **ZEM_P022** |
 | 4 | E-imza reddedildi | Takip job'ı (sonraki adım – `GetStatus`) |
 | 5 | E-imza onaylandı | Takip job'ı (sonraki adım – `GetStatus`) |

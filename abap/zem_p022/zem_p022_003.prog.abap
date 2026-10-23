@@ -271,10 +271,13 @@ class lcl_report implementation.
       append status_line to status_range.
     endif.
 
+    " formn <> space: ZEM_F002_03 'eimza' isteği kayıt bulamadığında boş
+    " anahtarlı satır ekleyebiliyor; bu satırlar işlenmez
     select formn seqno kunnr lifnr eimza
       into corresponding fields of table result
       from zem_t010
       where formn in s_formn
+        and formn <> space
         and eimza in status_range.
 
     " Aynı formda birden fazla satır işaretliyse en son seqno işlenir.
