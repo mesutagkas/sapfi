@@ -1,0 +1,631 @@
+{
+  "info": {
+    "name": "ArkSigner KIP 5.0 - E-Mutabakat durum sorgu testi",
+    "description": "ZEM_P022 takip job'ı için GetStatus / GetSignerInfos / GetSignedWorkflowFiles yanıtlarını toplar.\n\nSıra: 1) Collection variables'ı doldur. 2) '1 - Oluştur' klasörünü çalıştır. 3) İmzacı e-postasına gelen B mailinden imzala, C mailinden reddet. 4) '3 - İptal' klasörünü çalıştır. 5) '4 - Sorgula' klasörünü çalıştır, Postman Console'daki yanıtları paylaş.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.acbakimzala.com"
+    },
+    {
+      "key": "appId",
+      "value": ""
+    },
+    {
+      "key": "pass",
+      "value": ""
+    },
+    {
+      "key": "startedBy",
+      "value": "",
+      "description": "KIP kullanıcı adı (WorkflowStartedBy)"
+    },
+    {
+      "key": "signerName",
+      "value": ""
+    },
+    {
+      "key": "signerSurname",
+      "value": ""
+    },
+    {
+      "key": "signerEmail",
+      "value": "",
+      "description": "Mailine erişimin olan test imzacısı"
+    },
+    {
+      "key": "signerIdNumber",
+      "value": ""
+    },
+    {
+      "key": "taskType",
+      "value": "0",
+      "description": "0 = Seri imza, 2 = Onay (sertifika yoksa)"
+    },
+    {
+      "key": "testPdf",
+      "value": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA1OTUgODQyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA3MCA+PgpzdHJlYW0KQlQgL0YxIDE4IFRmIDcyIDc2MCBUZCAoRS1NdXRhYmFrYXQgQXJrU2lnbmVyIGVudGVncmFzeW9uIHRlc3RpKSBUaiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDM2MSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQzMQolJUVPRgo="
+    },
+    {
+      "key": "wfKeyA",
+      "value": ""
+    },
+    {
+      "key": "wfKeyB",
+      "value": ""
+    },
+    {
+      "key": "wfKeyC",
+      "value": ""
+    },
+    {
+      "key": "wfKeyD",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - Oluştur",
+      "item": [
+        {
+          "name": "CreateWorkflow A (bekleyen)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Success = true', () => pm.expect(r.Success).to.eql(true));",
+                  "const key = r.Data && (r.Data.workflowKey || r.Data.WorkflowKey);",
+                  "if (key) { pm.collectionVariables.set('wfKeyA', key); console.log('wfKeyA = ' + key); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"Workflow\": {\n    \"WorkflowStartedBy\": \"{{startedBy}}\",\n    \"SendNotificationMailToFirstSigner\": false,\n    \"AddQR\": true,\n    \"DocumentWorkflow\": {\n      \"Name\": \"SAP entegrasyon testi A\",\n      \"Description\": \"E-Mutabakat ArkSigner durum sorgu testi\",\n      \"SignType\": \"PAdES\",\n      \"SignValidationTime\": \"EST\"\n    },\n    \"PostOperation\": {\n      \"IsDocumentToBeArchived\": false,\n      \"SendFtp\": false,\n      \"SendMail\": false,\n      \"MailAddresses\": \"\",\n      \"SaveToFolder\": false,\n      \"IsSendToAllUsersInWorkflow\": false,\n      \"SendToWebService\": false\n    },\n    \"WorkflowStepList\": [\n      {\n        \"Username\": \"\",\n        \"Name\": \"{{signerName}}\",\n        \"Surname\": \"{{signerSurname}}\",\n        \"IDNumber\": \"{{signerIdNumber}}\",\n        \"EmailAddress\": \"{{signerEmail}}\",\n        \"OrderNo\": 1,\n        \"TaskType\": {{taskType}},\n        \"CompletionRule\": 0,\n        \"WorkflowStepNotificationList\": [\n          {\n            \"WorkflowStepNotificationType\": 1\n          },\n          {\n            \"WorkflowStepNotificationType\": 2\n          }\n        ],\n        \"WorflowStepPrivilegeModelList\": [\n          {\n            \"WorkflowPrivilegeType\": 1\n          },\n          {\n            \"WorkflowPrivilegeType\": 2\n          }\n        ]\n      }\n    ],\n    \"FileList\": [\n      {\n        \"FileName\": \"mutabakat_test_A.pdf\",\n        \"FileType\": 0,\n        \"Data\": \"{{testPdf}}\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CreateWorkflow",
+            "description": "Dokunulmayacak; bekleyen durum örneği."
+          }
+        },
+        {
+          "name": "CreateWorkflow B (imzalanacak)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Success = true', () => pm.expect(r.Success).to.eql(true));",
+                  "const key = r.Data && (r.Data.workflowKey || r.Data.WorkflowKey);",
+                  "if (key) { pm.collectionVariables.set('wfKeyB', key); console.log('wfKeyB = ' + key); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"Workflow\": {\n    \"WorkflowStartedBy\": \"{{startedBy}}\",\n    \"SendNotificationMailToFirstSigner\": true,\n    \"AddQR\": true,\n    \"DocumentWorkflow\": {\n      \"Name\": \"SAP entegrasyon testi B\",\n      \"Description\": \"E-Mutabakat ArkSigner durum sorgu testi\",\n      \"SignType\": \"PAdES\",\n      \"SignValidationTime\": \"EST\"\n    },\n    \"PostOperation\": {\n      \"IsDocumentToBeArchived\": false,\n      \"SendFtp\": false,\n      \"SendMail\": false,\n      \"MailAddresses\": \"\",\n      \"SaveToFolder\": false,\n      \"IsSendToAllUsersInWorkflow\": false,\n      \"SendToWebService\": false\n    },\n    \"WorkflowStepList\": [\n      {\n        \"Username\": \"\",\n        \"Name\": \"{{signerName}}\",\n        \"Surname\": \"{{signerSurname}}\",\n        \"IDNumber\": \"{{signerIdNumber}}\",\n        \"EmailAddress\": \"{{signerEmail}}\",\n        \"OrderNo\": 1,\n        \"TaskType\": {{taskType}},\n        \"CompletionRule\": 0,\n        \"WorkflowStepNotificationList\": [\n          {\n            \"WorkflowStepNotificationType\": 1\n          },\n          {\n            \"WorkflowStepNotificationType\": 2\n          }\n        ],\n        \"WorflowStepPrivilegeModelList\": [\n          {\n            \"WorkflowPrivilegeType\": 1\n          },\n          {\n            \"WorkflowPrivilegeType\": 2\n          }\n        ]\n      }\n    ],\n    \"FileList\": [\n      {\n        \"FileName\": \"mutabakat_test_B.pdf\",\n        \"FileType\": 0,\n        \"Data\": \"{{testPdf}}\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CreateWorkflow",
+            "description": "Gelen maildeki linkten imzalanacak (TaskType 2 ise onaylanacak)."
+          }
+        },
+        {
+          "name": "CreateWorkflow C (reddedilecek)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Success = true', () => pm.expect(r.Success).to.eql(true));",
+                  "const key = r.Data && (r.Data.workflowKey || r.Data.WorkflowKey);",
+                  "if (key) { pm.collectionVariables.set('wfKeyC', key); console.log('wfKeyC = ' + key); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"Workflow\": {\n    \"WorkflowStartedBy\": \"{{startedBy}}\",\n    \"SendNotificationMailToFirstSigner\": true,\n    \"AddQR\": true,\n    \"DocumentWorkflow\": {\n      \"Name\": \"SAP entegrasyon testi C\",\n      \"Description\": \"E-Mutabakat ArkSigner durum sorgu testi\",\n      \"SignType\": \"PAdES\",\n      \"SignValidationTime\": \"EST\"\n    },\n    \"PostOperation\": {\n      \"IsDocumentToBeArchived\": false,\n      \"SendFtp\": false,\n      \"SendMail\": false,\n      \"MailAddresses\": \"\",\n      \"SaveToFolder\": false,\n      \"IsSendToAllUsersInWorkflow\": false,\n      \"SendToWebService\": false\n    },\n    \"WorkflowStepList\": [\n      {\n        \"Username\": \"\",\n        \"Name\": \"{{signerName}}\",\n        \"Surname\": \"{{signerSurname}}\",\n        \"IDNumber\": \"{{signerIdNumber}}\",\n        \"EmailAddress\": \"{{signerEmail}}\",\n        \"OrderNo\": 1,\n        \"TaskType\": {{taskType}},\n        \"CompletionRule\": 0,\n        \"WorkflowStepNotificationList\": [\n          {\n            \"WorkflowStepNotificationType\": 1\n          },\n          {\n            \"WorkflowStepNotificationType\": 2\n          }\n        ],\n        \"WorflowStepPrivilegeModelList\": [\n          {\n            \"WorkflowPrivilegeType\": 1\n          },\n          {\n            \"WorkflowPrivilegeType\": 2\n          }\n        ]\n      }\n    ],\n    \"FileList\": [\n      {\n        \"FileName\": \"mutabakat_test_C.pdf\",\n        \"FileType\": 0,\n        \"Data\": \"{{testPdf}}\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CreateWorkflow",
+            "description": "Gelen maildeki linkten reddedilecek / geri gönderilecek."
+          }
+        },
+        {
+          "name": "CreateWorkflow D (iptal edilecek)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.test('Success = true', () => pm.expect(r.Success).to.eql(true));",
+                  "const key = r.Data && (r.Data.workflowKey || r.Data.WorkflowKey);",
+                  "if (key) { pm.collectionVariables.set('wfKeyD', key); console.log('wfKeyD = ' + key); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"Workflow\": {\n    \"WorkflowStartedBy\": \"{{startedBy}}\",\n    \"SendNotificationMailToFirstSigner\": false,\n    \"AddQR\": true,\n    \"DocumentWorkflow\": {\n      \"Name\": \"SAP entegrasyon testi D\",\n      \"Description\": \"E-Mutabakat ArkSigner durum sorgu testi\",\n      \"SignType\": \"PAdES\",\n      \"SignValidationTime\": \"EST\"\n    },\n    \"PostOperation\": {\n      \"IsDocumentToBeArchived\": false,\n      \"SendFtp\": false,\n      \"SendMail\": false,\n      \"MailAddresses\": \"\",\n      \"SaveToFolder\": false,\n      \"IsSendToAllUsersInWorkflow\": false,\n      \"SendToWebService\": false\n    },\n    \"WorkflowStepList\": [\n      {\n        \"Username\": \"\",\n        \"Name\": \"{{signerName}}\",\n        \"Surname\": \"{{signerSurname}}\",\n        \"IDNumber\": \"{{signerIdNumber}}\",\n        \"EmailAddress\": \"{{signerEmail}}\",\n        \"OrderNo\": 1,\n        \"TaskType\": {{taskType}},\n        \"CompletionRule\": 0,\n        \"WorkflowStepNotificationList\": [\n          {\n            \"WorkflowStepNotificationType\": 1\n          },\n          {\n            \"WorkflowStepNotificationType\": 2\n          }\n        ],\n        \"WorflowStepPrivilegeModelList\": [\n          {\n            \"WorkflowPrivilegeType\": 1\n          },\n          {\n            \"WorkflowPrivilegeType\": 2\n          }\n        ]\n      }\n    ],\n    \"FileList\": [\n      {\n        \"FileName\": \"mutabakat_test_D.pdf\",\n        \"FileType\": 0,\n        \"Data\": \"{{testPdf}}\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CreateWorkflow",
+            "description": "3 - İptal klasöründe API ile iptal edilecek."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Elle yapılacak (istek yok)",
+      "description": "B mailindeki linkten belgeyi imzala/onayla, C mailindeki linkten reddet. Ardından 3 ve 4'e geç.",
+      "item": []
+    },
+    {
+      "name": "3 - İptal",
+      "item": [
+        {
+          "name": "CancelWorkflow D",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"CancelledBy\": \"{{startedBy}}\",\n  \"CancellationReason\": \"SAP entegrasyon testi - iptal senaryosu\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/CancelWorkflow?workflowUuid={{wfKeyD}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 - Sorgula",
+      "item": [
+        {
+          "name": "GetStatus A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetStatus?workflowUuid={{wfKeyA}}"
+          }
+        },
+        {
+          "name": "GetStatus B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetStatus?workflowUuid={{wfKeyB}}"
+          }
+        },
+        {
+          "name": "GetStatus C",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetStatus?workflowUuid={{wfKeyC}}"
+          }
+        },
+        {
+          "name": "GetStatus D",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetStatus?workflowUuid={{wfKeyD}}"
+          }
+        },
+        {
+          "name": "GetSignerInfos A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetSignerInfos?workflowUuid={{wfKeyA}}"
+          }
+        },
+        {
+          "name": "GetSignerInfos B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetSignerInfos?workflowUuid={{wfKeyB}}"
+          }
+        },
+        {
+          "name": "GetSignerInfos C",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetSignerInfos?workflowUuid={{wfKeyC}}"
+          }
+        },
+        {
+          "name": "GetSignerInfos D",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetSignerInfos?workflowUuid={{wfKeyD}}"
+          }
+        },
+        {
+          "name": "GetSignedWorkflowFiles B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetSignedWorkflowFiles?workflowUuid={{wfKeyB}}"
+          }
+        },
+        {
+          "name": "GetStatus A - POST denemesi (PI için)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegrationV2/GetStatus?workflowUuid={{wfKeyA}}"
+          }
+        }
+      ]
+    }
+  ]
+}
