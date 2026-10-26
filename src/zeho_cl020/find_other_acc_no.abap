@@ -241,6 +241,23 @@ method find_other_acc_no.
         lv_shw_prctr     type vbap-prctr.
 *-------------------------------------------------------------------*
 
+*-------------------------------------------------------------------*
+* *- E-Ticaret iade süreci (sadece Ziraat Bankası ve Finansbank)
+* *- added by <kullanıcı> 26.10.2026
+*-------------------------------------------------------------------*
+  constants: lc_etc_blart     type blart            value 'I3',
+             lc_etc_xref3     type xref3            value '2209.PAZARYERI.PRK',
+             lc_etc_prctr     type prctr            value '1000701204',
+             lc_etc_kunnr_len type i                value 11,      " işaretten önce okunacak karakter
+             lc_bankc_ziraat  type zeho_t012-bankc  value '0010',  " Ziraat Bankası
+             lc_bankc_finans  type zeho_t012-bankc  value '0111'.  " QNB Finansbank
+  data: lv_etc_off       type i,
+        lv_etc_len       type i,
+        lv_etc_kunnr_txt type string,
+        lv_etc_kunnr     type kna1-kunnr,
+        lv_etc_check     type kna1-kunnr.
+*-------------------------------------------------------------------*
+
 ****************************************-- OPEN --*********************************************
 ******************************-- UYARLAMADAN DAN CARİ/HESAP ARAMA  --**************************
 
@@ -718,6 +735,89 @@ method find_other_acc_no.
           endif.
 *-------------------------------------------------------------------*
 **-- Closed : Showroom iade
+
+**-- Open : E-Ticaret iade - metindeki müşteri kodu ile müşteri bul
+*-------------------------------------------------------------------*
+* *- E-Ticaret iade: Ziraat Bankası ve Finansbank'ın eksi (-) hareketlerinde
+* *- müşteri ve VKN alanı boşsa kalem metnindeki "E.Ticaret İade"
+* *- işaretinden önceki 11 karakterden müşteri kodu alınır (büyük/küçük
+* *- harf, nokta, tire ve boşluk farkları tolere edilir). Örnek:
+* *-   "1000012345 E.Ticaret İade" / "1000012345-E.TİCARET İADE"
+* *- Müşteri KNB1'de varsa müşteri alanına yazılır; belge türü I3,
+* *- bağlantı anlaşması (XREF3) 2209.PAZARYERI.PRK, kâr merkezi 1000701204.
+* *- Performans: banka / işaret / alan kontrolleri metin aramasından önce
+* *- yapılıyor; diğer bankaların satırlarında metin taranmıyor, DB'ye
+* *- gidilmiyor.
+* *- added by <kullanıcı> 26.10.2026
+*-------------------------------------------------------------------*
+          if ( ( <fs_out>-kunnr is initial and <fs_out>-lifnr is initial and <fs_out>-saknr is initial and <fs_out>-statu ne '6' and iv_fiori eq space )
+            or ( iv_fiori eq abap_true ) )
+             and ( <fs_out>-bankc eq lc_bankc_ziraat or <fs_out>-bankc eq lc_bankc_finans )
+             and <fs_out>-prtyp eq '-'
+             and <fs_out>-kunnr is initial
+             and <fs_out>-vkn   is initial.
+            clear: lv_etc_kunnr_txt, lv_etc_kunnr, lv_etc_check.
+*-- E-Ticaret iade işareti (normalize metinde nokta / tire boşluk olur)
+            find first occurrence of 'E TICARET IADE' in lv_norm match offset lv_moff.
+            if sy-subrc ne 0.
+              find first occurrence of 'ETICARET IADE' in lv_norm match offset lv_moff.
+            endif.
+            if sy-subrc ne 0.
+              find first occurrence of 'E TICARETIADE' in lv_norm match offset lv_moff.
+            endif.
+            if sy-subrc ne 0.
+              find first occurrence of 'ETICARETIADE' in lv_norm match offset lv_moff.
+            endif.
+            if sy-subrc eq 0 and lv_moff > 0.
+*-- İşaretten önceki 11 karakter (metin daha kısaysa baştan itibaren)
+              lv_etc_off = lv_moff - lc_etc_kunnr_len.
+              if lv_etc_off < 0.
+                lv_etc_off = 0.
+              endif.
+              lv_etc_len = lv_moff - lv_etc_off.
+              lv_txt_part = lv_norm+lv_etc_off(lv_etc_len).
+              condense lv_txt_part.
+*-- 11 karakter içinde boşluk varsa işarete bitişik kelime alınır
+              if lv_txt_part is not initial.
+                clear lt_tok.
+                split lv_txt_part at space into table lt_tok.
+                read table lt_tok into lv_tok index lines( lt_tok ).
+                if sy-subrc eq 0 and lv_tok is not initial.
+                  lv_etc_kunnr_txt = lv_tok.
+                endif.
+              endif.
+            endif.
+            if lv_etc_kunnr_txt is not initial.
+*-- Sayısal kodda baştaki sıfırlar atılıp uzunluk kontrol ediliyor (müşteri no en fazla 10 hane)
+              if lv_etc_kunnr_txt co '0123456789'.
+                shift lv_etc_kunnr_txt left deleting leading '0'.
+              endif.
+              if lv_etc_kunnr_txt is not initial and strlen( lv_etc_kunnr_txt ) le 10.
+                lv_etc_kunnr = lv_etc_kunnr_txt.
+                call function 'CONVERSION_EXIT_ALPHA_INPUT'
+                  exporting
+                    input  = lv_etc_kunnr
+                  importing
+                    output = lv_etc_kunnr.
+
+                select single kunnr from knb1
+                  into lv_etc_check
+                  where kunnr = lv_etc_kunnr
+                    and bukrs = <fs_out>-bukrs.
+                if sy-subrc eq 0.
+                  clear: <fs_out>-lifnr, <fs_out>-saknr.
+                  <fs_out>-kunnr = lv_etc_kunnr.
+                  <fs_out>-koart = 'D'.
+                  <fs_out>-blart = lc_etc_blart.
+                  <fs_out>-xref3 = lc_etc_xref3.
+                  <fs_out>-prctr = lc_etc_prctr.
+                  <fs_out>-statu = '4'.
+                endif.
+              endif.
+            endif.
+          endif.
+*-------------------------------------------------------------------*
+**-- Closed : E-Ticaret iade
 
 *      **-- Open : İcra ödemesi - TC kimlik no ile personel satıcısı-----magkas
 *          if <fs_out>-kunnr is initial and <fs_out>-lifnr is initial
