@@ -830,6 +830,144 @@
           }
         }
       ]
+    },
+    {
+      "name": "6 - Eski sürüm (V1) GetStatus POST testi",
+      "description": "PI ekibinin önerdiği /services/WorkflowIntegration/GetStatus (POST, workflowKey body'de). V2 ile açılmış iş akışlarında çalışıp çalışmadığını test eder.",
+      "item": [
+        {
+          "name": "V1 GetStatus POST - bekleyen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"workflowKey\": \"b7b5e0ca-d55c-4b54-b4e4-429d46b6c8f5\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegration/GetStatus"
+          }
+        },
+        {
+          "name": "V1 GetStatus POST - tamamlandı",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"workflowKey\": \"6a9f18a6-17e8-4388-ae30-6ff9bb27963d\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegration/GetStatus"
+          }
+        },
+        {
+          "name": "V1 GetStatus POST - iade",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"workflowKey\": \"25a77c1c-9004-47d6-98d9-08354ceaecbf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegration/GetStatus"
+          }
+        },
+        {
+          "name": "V1 GetStatus POST - iptal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(pm.info.requestName, JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Config\": {\n    \"AppId\": \"{{appId}}\",\n    \"Pass\": \"{{pass}}\"\n  },\n  \"workflowKey\": \"7e7a3bad-0a48-4cb7-9cc1-df0dbcfdd2b5\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/services/WorkflowIntegration/GetStatus"
+          }
+        }
+      ]
     }
   ]
 }
