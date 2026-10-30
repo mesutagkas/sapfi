@@ -11,8 +11,8 @@ Portalda müşteri tarafından onaylanan mutabakat formlarını ArkSigner'a (KIP
 | 1 | E-imza işlemi için işlem bekliyor | Portal – gönderim ekranı (cari `ZEM_T015_EIMZA`'da ise) |
 | 2 | E-imza gönderildi | Portal (`ZEM_F002_03`, `confirm` / `eimza` istekleri) – yanıtta 1 → 2, aynı FORMN+SEQNO satırında; **ZEM_P022** – ArkSigner'a başarılı gönderimde |
 | 3 | E-imza gönderiminde hata alındı | **ZEM_P022** |
-| 4 | E-imza reddedildi | Takip job'ı (sonraki adım – `GetStatus`) |
-| 5 | E-imza onaylandı | Takip job'ı (sonraki adım – `GetStatus`) |
+| 4 | E-imza reddedildi | **ZEM_P022** (P_CHECK) – ArkSigner "İade Edildi" / "İptal Edildi" |
+| 5 | E-imza onaylandı | **ZEM_P022** (P_CHECK) – ArkSigner "Tamamlandı" |
 
 Portal onayda doğrudan 2 yazdığı için "onaylandı ama henüz gönderilmedi" ile "gönderildi"
 ayrımı `ZEM_T016_EIMZA-WFKEY` üzerinden yapılır: EIMZA = 2 olup workflowKey'i olmayan
@@ -29,7 +29,13 @@ form gönderilir, workflowKey'i olan form bir daha gönderilmez.
    workflowKey yoksa hata kabul edilir.
 5. Sonuç `ZEM_T016_EIMZA`'ya yazılır, `ZEM_T010-EIMZA` 2 veya 3 yapılır, form bazında
    `COMMIT WORK`. Bir formdaki hata diğer formları etkilemez.
-6. Sonuç listesi ALV olarak gösterilir (job'da spool).
+6. **P_CHECK:** `ZEM_T016_EIMZA`'da EIMZA = 2 ve workflowKey'i olan formlar için ArkSigner
+   GetStatus çağrılır (PI proxy `ZCO_SI_SAP_TO_3RD_ARKSIGNER_GE`):
+   - İmzacı listesi dönerse iş akışı sürüyor → statü değişmez, sonraki çalışmada tekrar sorulur.
+   - Durum metni dönerse `ZEM_T018_EIMZA`'daki karşılığı (4 / 5) `ZEM_T010` ve
+     `ZEM_T016_EIMZA`'ya yazılır.
+   - Tanımsız metin veya teknik hata → statü değişmez, mesaj log'a yazılır.
+7. Sonuç listesi ALV olarak gösterilir (job'da spool). Tek job iki adımı da çalıştırır.
 
 ## Oluşturulacak dictionary nesneleri
 
@@ -66,11 +72,28 @@ Tablo numaraları öneridir; sistemde boş olan numaralarla değiştirin (kodda 
 - Eski programdaki AppId/Pass bilgileri paylaşıldığı için canlıda farklı/yenilenmiş
   bilgi kullanılması önerilir.
 
+### `ZEM_T018_EIMZA` – ArkSigner durum metni → EIMZA (Delivery class C)
+
+| Alan | Key | Data element | Tip | Açıklama |
+|---|---|---|---|---|
+| MANDT | X | MANDT | CLNT 3 | Üst birim |
+| DTEXT | X | TEXT100 | CHAR 100 | GetStatus yanıtındaki `Data` metni |
+| EIMZA | | ZEM_DE_210 | CHAR 1 | Yazılacak e-imza statüsü |
+
+Başlangıç kayıtları (metinler Postman testlerinde görülen yanıtlarla birebir aynı olmalı):
+
+| DTEXT | EIMZA |
+|---|---|
+| İş Akışı Tamamlandı | 5 |
+| İş Akışı İade Edildi | 4 |
+| İş Akışı İptal Edildi | 4 |
+
 ## Text symbols (SE38 → Goto → Text Elements)
 
 | Sembol | Metin |
 |---|---|
 | B01 | Seçim Kriterleri |
+| B02 | İşlem Adımları |
 | D01 | Mutabakat Formu |
 | D02 | E-Mutabakat formu e-imza talebi |
 | E01 | Form detayları okunamadı (ZEM_F002_02) |
@@ -89,9 +112,15 @@ Tablo numaraları öneridir; sistemde boş olan numaralarla değiştirin (kodda 
 | E14 | Tahsilat tutarı sayıya çevrilemedi |
 | E15 | ArkSigner hata kodu: |
 | E16 | ArkSigner workflowKey döndürmedi |
+| E17 | ArkSigner durum sorgusu henüz bağlanmadı |
+| E18 | ArkSigner durum eşlemesi bulunamadı (ZEM_T018_EIMZA) |
 | I01 | Gönderilecek form bulunamadı |
+| I02 | Durumu sorgulanacak form bulunamadı |
+| I03 | İş akışı devam ediyor |
+| W02 | Tanımsız ArkSigner durumu: |
 
-Selection texts: `S_FORMN` → Form Numarası, `P_RETRY` → Hatalıları yeniden gönder.
+Selection texts: `S_FORMN` → Form Numarası, `P_RETRY` → Hatalıları yeniden gönder,
+`P_SEND` → ArkSigner'a gönder, `P_CHECK` → E-imza durumlarını sorgula.
 
 Eski programdaki `S01`, `W01` sembolleri ve `P_FORMN / P_SNAME / P_SSURN / P_SEMAIL / P_STDBY`
 parametreleri artık kullanılmıyor.
@@ -115,10 +144,8 @@ parametreleri artık kullanılmıyor.
    Şifreyi düzeltip `P_RETRY` ile çalıştırın → EIMZA = 2.
 6. SM36 ile periyodik job tanımlayın (S_FORMN boş, varyantla).
 
-## Sonraki adım – takip job'ı (4 / 5)
+## Açık kalan – GetStatus proxy bağlantısı
 
-`GetStatus` / `GetSignerInfos` / `GetSignedWorkflowFiles` (API dok. 6.2.3–6.2.5) için yeni
-ESR arayüzleri gerekiyor. Dokümandaki yanıt örnekleri eksik olduğu için önce Postman'den
-bekleyen / imzalanmış / reddedilmiş birer iş akışı için gerçek yanıtlar alınmalı. Ayrıca
-bu metotlar body'li `GET` olduğu için PI REST adapter'ın bunu gönderip gönderemediği
-teyit edilmeli.
+`call_get_status` metodu şimdilik "henüz bağlanmadı" (E17) döner; P_CHECK çalışır ama hiçbir
+statüyü değiştirmez. PI proxy'sinin (`ZCO_SI_SAP_TO_3RD_ARKSIGNER_GE`) istek / yanıt yapıları
+netleşince yalnızca bu metot doldurulacak.

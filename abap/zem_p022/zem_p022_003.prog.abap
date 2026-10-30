@@ -38,7 +38,8 @@ class lcl_report definition.
     methods:
       initialization,
 
-      " Portalda onaylanan formları ArkSigner'a gönderir
+      " P_SEND: onaylanan formları ArkSigner'a gönderir
+      " P_CHECK: gönderilmiş formların e-imza sonucunu sorgular
       prepare_data,
 
       " İşlenen formların sonucunu listeler (job'da spool'a düşer)
@@ -54,9 +55,32 @@ class lcl_report definition.
       " ArkSigner kimlik bilgileri ve iş akışını başlatan kullanıcı
       m_config type zem_t017_eimza,
       " Job sonuç listesi
-      m_output type ty_t_output.
+      m_output type ty_t_output,
+      " ArkSigner durum metni → EIMZA eşlemesi (ZEM_T018_EIMZA)
+      m_status_map type sorted table of zem_t018_eimza with unique key dtext.
 
     methods:
+      " Gönderim adımı: EIMZA = 2 (P_RETRY ile 3) formları ArkSigner'a gönderir
+      send_forms,
+
+      " Takip adımı: gönderilmiş formların e-imza sonucunu sorgulayıp 4 / 5 yazar
+      check_statuses,
+
+      " Tek bir formun durumunu sorgular ve sonuç kesinleştiyse statüyü günceller
+      process_status
+        importing tracked_form type ty_tracked_form,
+
+      " ArkSigner GetStatus çağrısı (PI proxy)
+      call_get_status
+        importing workflow_key  type sysuuid_c36
+        returning value(result) type ty_status_result,
+
+      " Takip sonucunu ZEM_T016_EIMZA'ya, kesinleştiyse ZEM_T010-EIMZA'ya yazar
+      save_status_result
+        importing tracked_form type ty_tracked_form
+                  new_status   type zem_de_210
+                  message_text type csequence,
+
       " ZEM_T010'dan gönderilecek formları seçer: EIMZA = 2 (P_RETRY ile 3)
       " olup ZEM_T016_EIMZA'da workflowKey'i olmayanlar
       get_forms_to_send
@@ -235,13 +259,23 @@ class lcl_report implementation.
   endmethod.                    "f4_help_for_form
 
   method prepare_data.
-    data forms type ty_t_eimza_form.
-    data form  type ty_eimza_form.
-
     select single * from zem_t017_eimza into m_config.
     if sy-subrc <> 0.
       message text-e10 type 'E'.
     endif.
+
+    if p_send = abap_true.
+      send_forms( ).
+    endif.
+
+    if p_check = abap_true.
+      check_statuses( ).
+    endif.
+  endmethod.                    "prepare_data
+
+  method send_forms.
+    data forms type ty_t_eimza_form.
+    data form  type ty_eimza_form.
 
     forms = get_forms_to_send( ).
     if forms is initial.
@@ -252,7 +286,116 @@ class lcl_report implementation.
     loop at forms into form.
       process_form( form ).
     endloop.
-  endmethod.                    "prepare_data
+  endmethod.                    "send_forms
+
+  method check_statuses.
+    data tracked_forms type ty_t_tracked_form.
+    data tracked_form  type ty_tracked_form.
+
+    select * from zem_t018_eimza into table m_status_map.
+    if m_status_map is initial.
+      message text-e18 type 'E'.
+    endif.
+
+    " ZEM_T016_EIMZA'daki statü job tarafından ZEM_T010 ile birlikte
+    " güncellendiği için takip bu tablodan yürütülür
+    select formn seqno wfkey
+      into corresponding fields of table tracked_forms
+      from zem_t016_eimza
+      where formn in s_formn
+        and eimza = eimza_sent
+        and wfkey <> space.
+
+    if tracked_forms is initial.
+      message text-i02 type 'S'.
+      return.
+    endif.
+
+    loop at tracked_forms into tracked_form.
+      process_status( tracked_form ).
+    endloop.
+  endmethod.                    "check_statuses
+
+  method process_status.
+    data status_result type ty_status_result.
+    data status_map    type zem_t018_eimza.
+    data message_text  type string.
+
+    status_result = call_get_status( tracked_form-wfkey ).
+
+    " Teknik hata: statüye dokunulmaz, sonraki çalışmada tekrar sorulur
+    if status_result-error_text is not initial.
+      save_status_result( tracked_form = tracked_form
+                          new_status   = eimza_sent
+                          message_text = status_result-error_text ).
+      return.
+    endif.
+
+    " İmzacı listesi döndü: iş akışı hâlâ devam ediyor
+    if status_result-pending = abap_true.
+      save_status_result( tracked_form = tracked_form
+                          new_status   = eimza_sent
+                          message_text = text-i03 ).
+      return.
+    endif.
+
+    " Durum metni ZEM_T018_EIMZA'da tanımlı değilse statü değiştirilmez;
+    " ArkSigner metni değiştirdiyse tabloya eklenmesi yeterli
+    read table m_status_map into status_map
+      with table key dtext = status_result-data_text.
+    if sy-subrc <> 0.
+      concatenate text-w02 status_result-data_text into message_text separated by space.
+      save_status_result( tracked_form = tracked_form
+                          new_status   = eimza_sent
+                          message_text = message_text ).
+      return.
+    endif.
+
+    save_status_result( tracked_form = tracked_form
+                        new_status   = status_map-eimza
+                        message_text = status_result-data_text ).
+  endmethod.                    "process_status
+
+  method call_get_status.
+    " PI proxy (ZCO_SI_SAP_TO_3RD_ARKSIGNER_GE) istek/yanıt yapıları
+    " netleşince doldurulacak. O zamana kadar her form için teknik hata
+    " döner; statüler değişmez, gönderim adımı etkilenmez.
+    result-error_text = text-e17.
+  endmethod.                    "call_get_status
+
+  method save_status_result.
+    data output_line type ty_output.
+    data checked_on  type sy-datum.
+    data checked_at  type sy-uzeit.
+    data short_text  type bapi_msg.
+
+    checked_on = sy-datum.
+    checked_at = sy-uzeit.
+    short_text = message_text.
+
+    update zem_t016_eimza
+       set eimza = new_status
+           ermsg = short_text
+           chkdt = checked_on
+           chktm = checked_at
+     where formn = tracked_form-formn.
+
+    " ZEM_T010 yalnızca sonuç kesinleştiğinde (4 / 5) güncellenir
+    if new_status <> eimza_sent.
+      update zem_t010 set eimza = new_status
+        where formn = tracked_form-formn
+          and seqno = tracked_form-seqno.
+    endif.
+
+    commit work.
+
+    output_line-formn = tracked_form-formn.
+    output_line-seqno = tracked_form-seqno.
+    output_line-eimza = new_status.
+    output_line-wfkey = tracked_form-wfkey.
+    output_line-ermsg = short_text.
+    append output_line to m_output.
+  endmethod.                    "save_status_result
 
   method get_forms_to_send.
     data status_range type range of zem_de_210.

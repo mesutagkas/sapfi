@@ -56,6 +56,23 @@ types: begin of ty_send_result,
          error_text   type string,
        end of ty_send_result.
 
+" Durumu sorgulanacak form: ZEM_T016_EIMZA'da gönderilmiş (2) ve workflowKey'i olan
+types: begin of ty_tracked_form,
+         formn type zem_de_001,
+         seqno type seqno,
+         wfkey type sysuuid_c36,
+       end of ty_tracked_form.
+types ty_t_tracked_form type standard table of ty_tracked_form with default key.
+
+" ArkSigner GetStatus sonucu
+types: begin of ty_status_result,
+         " İş akışı kapandığında dönen durum metni (ör. "İş Akışı Tamamlandı")
+         data_text  type string,
+         " İmzacı listesi döndüyse iş akışı hâlâ devam ediyor
+         pending    type abap_bool,
+         error_text type string,
+       end of ty_status_result.
+
 " Job çıktısı (önde ALV, arka planda spool)
 types: begin of ty_output,
          formn type zem_de_001,
