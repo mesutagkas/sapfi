@@ -448,6 +448,24 @@ method find_other_acc_no.
       sort lt_acdoca by rbukrs racct budat tsl rtcur.
     endif.
 
+*-------------------------------------------------------------------*
+* *- Bellekteki belge-satır bağları da aday kontrolüne ekleniyor.
+* *- lt_link sadece DB'den okunuyordu: bir satır muhasebeleşip belge
+* *- numarası ekranda dolduğu halde ZEHO_T012'ye henüz yazılmamışken
+* *- (ör. muhasebeleştirme sonrası yenileme) aynı hesap/tarih/tutardaki
+* *- diğer satır bu belgeyi kendi belgesi sanıp alabiliyordu. Banka
+* *- referansı boş satırlarda belge referansı herkes için 'EHO-' olduğu
+* *- için ayırt edici tek kontrol bu bağlar.
+* *- added by <kullanıcı> 02.11.2026
+*-------------------------------------------------------------------*
+    loop at ct_out assigning <fs_out> where belnr is not initial.
+      insert value #( bukrs = <fs_out>-bukrs
+                      belnr = <fs_out>-belnr
+                      hkont = <fs_out>-hkont
+                      seqnr = <fs_out>-seqnr ) into table lt_link.
+    endloop.
+*-------------------------------------------------------------------*
+
 *    -------------------------------------------------------------------*
 * *- İcra ödemeleri: metindeki TC kimlik no ile personel satıcısı bulunuyor
 * *- added by <kullanıcı> DD.MM.YYYY HH:MM:SS
@@ -1161,6 +1179,16 @@ method find_other_acc_no.
           if lv_found = abap_true.
             read table lt_acdoca into ls_acdoca index lv_tabix.
             <fs_out>-belnr = ls_acdoca-belnr.
+*-------------------------------------------------------------------*
+* *- Bu çalışmada verilen belge de bağlara ekleniyor: belgenin aynı
+* *- hesaba düşen başka kalemi varsa diğer satıra verilmesin
+* *- added by <kullanıcı> 02.11.2026
+*-------------------------------------------------------------------*
+            insert value #( bukrs = <fs_out>-bukrs
+                            belnr = <fs_out>-belnr
+                            hkont = <fs_out>-hkont
+                            seqnr = <fs_out>-seqnr ) into table lt_link.
+*-------------------------------------------------------------------*
 
             if <fs_out>-kunnr is initial and <fs_out>-lifnr is initial.
               <fs_out>-kunnr = ls_acdoca-kunnr.           " cariyi belgeden al
