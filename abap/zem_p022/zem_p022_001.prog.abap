@@ -43,6 +43,7 @@ types ty_t_signer_contact type standard table of ty_signer_contact with default 
 types: begin of ty_eimza_form,
          formn type zem_de_001,
          seqno type seqno,
+         accno type zem_de_005,
          kunnr type kunnr,
          lifnr type lifnr,
          eimza type zem_de_210,

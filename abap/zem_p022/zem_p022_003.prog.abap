@@ -469,7 +469,7 @@ class lcl_report implementation.
 
     " formn <> space: ZEM_F002_03 'eimza' isteği kayıt bulamadığında boş
     " anahtarlı satır ekleyebiliyor; bu satırlar işlenmez
-    select formn seqno kunnr lifnr eimza
+    select formn seqno accno kunnr lifnr eimza
       into corresponding fields of table result
       from zem_t010
       where formn in s_formn
@@ -587,19 +587,34 @@ class lcl_report implementation.
     data contact_count type i.
     data email         type ad_smtpadr.
 
-    " Müşteri formlarında KUNNR, satıcı formlarında LIFNR dolu gelir
+    " Cari: KUNNR / LIFNR doluysa o, değilse portalın kullandığı cari
+    " numarası (ACCNO) – ACCNO müşteri ya da satıcı numarası olabilir
     if form-kunnr is not initial.
       select parnr namev name1 prsnr
         into corresponding fields of table contacts
         from knvk
         where kunnr = form-kunnr
           and pafkt = signer_function.
-    else.
+    elseif form-lifnr is not initial.
       select parnr namev name1 prsnr
         into corresponding fields of table contacts
         from knvk
         where lifnr = form-lifnr
           and pafkt = signer_function.
+    elseif form-accno is not initial.
+      select parnr namev name1 prsnr
+        into corresponding fields of table contacts
+        from knvk
+        where kunnr = form-accno
+          and pafkt = signer_function.
+
+      if contacts is initial.
+        select parnr namev name1 prsnr
+          into corresponding fields of table contacts
+          from knvk
+          where lifnr = form-accno
+            and pafkt = signer_function.
+      endif.
     endif.
 
     " Job'da elle seçim yapılamadığı için imzacı tekil olmalı
