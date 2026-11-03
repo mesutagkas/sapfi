@@ -77,6 +77,16 @@ method oto_recognation. "burası otomatik muhasebeleştirme adımının olduğu 
                 <fs_out>-icon     = '@08@'.
                 <fs_out>-belnr = ls_bseg-belnr.
                 modify zeho_t012 from ls_t012.
+*-------------------------------------------------------------------*
+* *- Bağ hemen kalıcılaştırılıyor: sonraki satırın muhasebeleştirmesi
+* *- hata verirse recognation BAPI_TRANSACTION_ROLLBACK çağırıyor ve
+* *- commit edilmemiş bu MODIFY de geri alınıyordu; ekranda belge
+* *- numarası görünürken DB'de bağ kalmıyor, aynı belge başka satıra
+* *- da veriliyordu. Diğer oturumlar da bağı hemen görür.
+* *- added by <kullanıcı> 03.11.2026
+*-------------------------------------------------------------------*
+                commit work and wait.
+*-------------------------------------------------------------------*
                 message s038(zeho) display like 'S'.
 * İlgili Kayıt Daha Önce Muhasebeleştirilmiştir. Kayıt Güncellenmiştir.
 

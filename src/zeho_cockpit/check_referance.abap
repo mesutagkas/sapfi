@@ -53,6 +53,15 @@ method check_referance.
           lv_tsl     type acdoca-tsl.
 *-------------------------------------------------------------------*
 
+*-------------------------------------------------------------------*
+* *- Virman karşı bankası: satırın karşı IBAN'ının şirket banka hesabı
+* *- (ZEHO_T002) ve aday belgenin banka kalemi (1. kalem) hesabı
+* *- added by <kullanıcı> 03.11.2026
+*-------------------------------------------------------------------*
+    data: lv_cntr_hkont type zeho_t002-hkont,
+          lv_bank_racct type acdoca-racct.
+*-------------------------------------------------------------------*
+
     clear es_bseg.
     ev_subrc = 4.
 
@@ -101,6 +110,23 @@ method check_referance.
       if sy-subrc = 0.
         continue.
       endif.
+
+*-------------------------------------------------------------------*
+* *- Ekrandaki başka bir satıra bu çalışmada verilmiş belge de atlanır:
+* *- bağ henüz DB'ye yazılmamış (ya da sonraki bir satırın rollback'i
+* *- ile geri alınmış) olabilir.
+* *- added by <kullanıcı> 03.11.2026
+*-------------------------------------------------------------------*
+      loop at mt_out transporting no fields
+           where bukrs = ls_bkpf_ref-bukrs
+             and belnr = ls_bkpf_ref-belnr
+             and seqnr <> is_out-seqnr.
+        exit.
+      endloop.
+      if sy-subrc = 0.
+        continue.
+      endif.
+*-------------------------------------------------------------------*
 
 *-- Banka kalemi (1. kalem) tutarı hareketle aynı olmalı
       clear ls_bseg.
@@ -158,6 +184,20 @@ method check_referance.
           and b~xblnr      like 'EHO-%'
           and b~stblg      = space.
 
+*-------------------------------------------------------------------*
+* *- Satırın karşı bankası: karşı IBAN şirketin kendi banka hesabıysa
+* *- (ZEHO_T002) o hesabın ana hesabı. Bulunamazsa karşı banka
+* *- kontrolü yapılmaz (eski davranış).
+* *- added by <kullanıcı> 03.11.2026
+*-------------------------------------------------------------------*
+      clear lv_cntr_hkont.
+      if lt_counter is not initial and is_out-iban is not initial.
+        select single hkont from zeho_t002
+          into lv_cntr_hkont
+          where iban = is_out-iban.
+      endif.
+*-------------------------------------------------------------------*
+
       loop at lt_counter into ls_counter.
         clear lv_belnr_t012.
         select single belnr from zeho_t012
@@ -169,6 +209,44 @@ method check_referance.
         if sy-subrc = 0.
           continue.
         endif.
+
+*-------------------------------------------------------------------*
+* *- Ekrandaki aynı hesaptaki başka bir satıra bu çalışmada verilmiş
+* *- belge de atlanır (bağ henüz DB'de olmayabilir).
+* *- added by <kullanıcı> 03.11.2026
+*-------------------------------------------------------------------*
+        loop at mt_out transporting no fields
+             where bukrs = ls_counter-rbukrs
+               and belnr = ls_counter-belnr
+               and hkont = is_out-hkont
+               and seqnr <> is_out-seqnr.
+          exit.
+        endloop.
+        if sy-subrc = 0.
+          continue.
+        endif.
+
+*-------------------------------------------------------------------*
+* *- Belge bu satırın karşı bankasından atılmış olmalı: belgenin banka
+* *- kalemi (1. kalem) hesabı satırın karşı banka hesabı değilse belge
+* *- başka bir virmanındır (ör. QNB'den gelen satır YKB'den atılan
+* *- virman belgesine bağlanıyordu).
+* *- added by <kullanıcı> 03.11.2026
+*-------------------------------------------------------------------*
+        if lv_cntr_hkont is not initial.
+          clear lv_bank_racct.
+          select single racct from acdoca
+            into lv_bank_racct
+            where rldnr  = '0L'
+              and rbukrs = ls_counter-rbukrs
+              and gjahr  = ls_counter-gjahr
+              and belnr  = ls_counter-belnr
+              and buzei  = '001'.
+          if sy-subrc = 0 and lv_bank_racct <> lv_cntr_hkont.
+            continue.
+          endif.
+        endif.
+*-------------------------------------------------------------------*
 
         clear ls_bseg.
         select single * from bseg
