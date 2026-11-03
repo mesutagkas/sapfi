@@ -112,8 +112,8 @@ Başlangıç kayıtları (metinler Postman testlerinde görülen yanıtlarla bir
 | E14 | Tahsilat tutarı sayıya çevrilemedi |
 | E15 | ArkSigner hata kodu: |
 | E16 | ArkSigner workflowKey döndürmedi |
-| E17 | ArkSigner durum sorgusu henüz bağlanmadı |
 | E18 | ArkSigner durum eşlemesi bulunamadı (ZEM_T018_EIMZA) |
+| E19 | İş akışı kapandı, durum metni okunamadı |
 | I01 | Gönderilecek form bulunamadı |
 | I02 | Durumu sorgulanacak form bulunamadı |
 | I03 | İş akışı devam ediyor |
@@ -144,8 +144,20 @@ parametreleri artık kullanılmıyor.
    Şifreyi düzeltip `P_RETRY` ile çalıştırın → EIMZA = 2.
 6. SM36 ile periyodik job tanımlayın (S_FORMN boş, varyantla).
 
-## Açık kalan – GetStatus proxy bağlantısı
+## GetStatus proxy
 
-`call_get_status` metodu şimdilik "henüz bağlanmadı" (E17) döner; P_CHECK çalışır ama hiçbir
-statüyü değiştirmez. PI proxy'sinin (`ZCO_SI_SAP_TO_3RD_ARKSIGNER_GE`) istek / yanıt yapıları
-netleşince yalnızca bu metot doldurulacak.
+| | |
+|---|---|
+| Sınıf / metot | `ZCO_SI_SAP_TO_3RD_ARKSIGNER_GE` → `SI_SAP_TO_3RD_ARKSIGNER_GET_ST` |
+| İstek | `ZMT_SAP_ARKSIGNER_GET_STATUS_1`: Config (AppId, Pass) + workflowKey |
+| Yanıt | `ZMT_SAP_ARKSIGNER_GET_STATUS_E`: ErrorCode, Success, Data (tablo), Error |
+
+Syntax check'te teyit edilecek tahmini adlar (`call_get_status`):
+`mt_sap_arksigner_get_status_ei` (istek ve yanıttaki üst bileşen), `config` (yapı mı tablo mı),
+`workflow_key`, Data satırındaki `status` ve `email`.
+
+### Açık kalan – kapanmış iş akışının durum metni
+
+İş akışı kapandığında ArkSigner `Data`'da metin döner. Bu metnin PI yanıtında hangi alana
+geldiği teyit edilene kadar `call_get_status` E19 döner: form 2'de kalır, statü değişmez.
+Metnin yeri netleşince yalnızca bu metodun son bölümü tamamlanacak.

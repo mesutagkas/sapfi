@@ -357,10 +357,63 @@ class lcl_report implementation.
   endmethod.                    "process_status
 
   method call_get_status.
-    " PI proxy (ZCO_SI_SAP_TO_3RD_ARKSIGNER_GE) istek/yanıt yapıları
-    " netleşince doldurulacak. O zamana kadar her form için teknik hata
-    " döner; statüler değişmez, gönderim adımı etkilenmez.
-    result-error_text = text-e17.
+    data request           type zmt_sap_arksigner_get_status_1.
+    data response          type zmt_sap_arksigner_get_status_e.
+    data response_data     like line of response-mt_sap_arksigner_get_status_ei-data.
+    data proxy             type ref to zco_si_sap_to_3rd_arksigner_ge.
+    data system_fault      type ref to cx_ai_system_fault.
+    data application_fault type ref to cx_ai_application_fault.
+    data success           type string.
+
+    " ArkSigner GetStatus (POST): kimlik bilgileri ve workflowKey body'de gider
+    request-mt_sap_arksigner_get_status_ei-config-app_id = m_config-appid.
+    request-mt_sap_arksigner_get_status_ei-config-pass   = m_config-apass.
+    request-mt_sap_arksigner_get_status_ei-workflow_key  = workflow_key.
+
+    try.
+        create object proxy.
+
+        proxy->si_sap_to_3rd_arksigner_get_st(
+          exporting
+            output = request
+          importing
+            input  = response ).
+
+      catch cx_ai_system_fault into system_fault.
+        result-error_text = system_fault->errortext.
+        return.
+
+      catch cx_ai_application_fault into application_fault.
+        result-error_text = application_fault->get_text( ).
+        return.
+    endtry.
+
+    " ErrorCode başarısız yanıtta da 0 gelebildiği için esas kontrol Success'tir
+    success = response-mt_sap_arksigner_get_status_ei-success.
+    translate success to lower case.
+
+    if success <> arksigner_flag_true.
+      result-error_text = response-mt_sap_arksigner_get_status_ei-error.
+      if result-error_text is initial.
+        concatenate text-e15 response-mt_sap_arksigner_get_status_ei-error_code
+          into result-error_text separated by space.
+      endif.
+      return.
+    endif.
+
+    " İş akışı sürerken ArkSigner sıradaki imzacıları liste olarak döner
+    loop at response-mt_sap_arksigner_get_status_ei-data into response_data
+      where status is not initial
+         or email  is not initial.
+      result-pending = abap_true.
+      return.
+    endloop.
+
+    " İş akışı kapandığında ArkSigner Data'da durum metni döner
+    " ("İş Akışı Tamamlandı" / "İade Edildi" / "İptal Edildi"). Bu metnin
+    " PI yanıtında hangi alana geldiği teyit edilene kadar statü
+    " değiştirilmez; form 2'de kalır ve sonraki çalışmada tekrar sorulur.
+    result-error_text = text-e19.
   endmethod.                    "call_get_status
 
   method save_status_result.
