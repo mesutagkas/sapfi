@@ -150,14 +150,14 @@ parametreleri artık kullanılmıyor.
 |---|---|
 | Sınıf / metot | `ZCO_SI_SAP_TO_3RD_ARKSIGNER_GE` → `SI_SAP_TO_3RD_ARKSIGNER_GET_ST` |
 | İstek | `ZMT_SAP_ARKSIGNER_GET_STATUS_1`: Config (AppId, Pass) + workflowKey |
-| Yanıt | `ZMT_SAP_ARKSIGNER_GET_STATUS_E`: ErrorCode, Success, Data (tablo), Error |
+| Yanıt | `ZMT_SAP_ARKSIGNER_GET_STATUS_E`: ErrorCode, Success, Data (tablo – iş akışı sürerken), DataText (iş akışı kapandığında durum metni), Error |
 
 Syntax check'te teyit edilecek tahmini adlar (`call_get_status`):
 `mt_sap_arksigner_get_status_ei` (istek ve yanıttaki üst bileşen), `config` (yapı mı tablo mı),
 `workflow_key`, Data satırındaki `status` ve `email`.
 
-### Açık kalan – kapanmış iş akışının durum metni
+### Kapanmış iş akışı
 
-İş akışı kapandığında ArkSigner `Data`'da metin döner. Bu metnin PI yanıtında hangi alana
-geldiği teyit edilene kadar `call_get_status` E19 döner: form 2'de kalır, statü değişmez.
-Metnin yeri netleşince yalnızca bu metodun son bölümü tamamlanacak.
+İş akışı kapandığında ArkSigner `Data`'da metin döner; PI bu metni `DataText` alanına taşır.
+`call_get_status` metni okur, `process_status` `ZEM_T018_EIMZA` ile 4 / 5'e eşler. `DataText`
+boş gelirse E19 döner ve statü değişmez.

@@ -410,10 +410,13 @@ class lcl_report implementation.
     endloop.
 
     " İş akışı kapandığında ArkSigner Data'da durum metni döner
-    " ("İş Akışı Tamamlandı" / "İade Edildi" / "İptal Edildi"). Bu metnin
-    " PI yanıtında hangi alana geldiği teyit edilene kadar statü
-    " değiştirilmez; form 2'de kalır ve sonraki çalışmada tekrar sorulur.
-    result-error_text = text-e19.
+    " ("İş Akışı Tamamlandı" / "İade Edildi" / "İptal Edildi"); PI bu
+    " metni DataText alanına taşır
+    result-data_text = response-mt_sap_arksigner_get_status_ei-data_text.
+
+    if result-data_text is initial.
+      result-error_text = text-e19.
+    endif.
   endmethod.                    "call_get_status
 
   method save_status_result.
