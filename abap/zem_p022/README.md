@@ -23,8 +23,9 @@ form gönderilir, workflowKey'i olan form bir daha gönderilmez.
 1. `ZEM_T017_EIMZA`'dan AppId / Pass / WorkflowStartedBy okunur (yoksa job durur).
 2. `ZEM_T010`'da `EIMZA = 2` (P_RETRY işaretliyse 3 de) olan satırlar seçilir; form başına
    en yüksek SEQNO'lu satır alınır. `ZEM_T016_EIMZA`'da workflowKey'i olan formlar elenir.
-3. Her form için: form detayı → Adobe Form PDF → base64 → imzacı (KNVK işlev 99 + ADR6)
-   → proxy ile CreateWorkflow.
+3. Her form için: form detayı → Adobe Form PDF → base64 → imzacı → proxy ile CreateWorkflow.
+   İmzacı: carinin (KUNNR / LIFNR, ikisi boşsa ACCNO'nun hem müşteri hem satıcı tarafı)
+   işlev 99 ilgili kişilerinden ADR6'da varsayılan e-postası olan **tek** kişi.
 4. Yanıt kontrolü: `SUCCESS = true` ve `ERROR_CODE = 0` değilse veya `DATA` içinde
    workflowKey yoksa hata kabul edilir.
 5. Sonuç `ZEM_T016_EIMZA`'ya yazılır, `ZEM_T010-EIMZA` 2 veya 3 yapılır, form bazında
@@ -107,7 +108,7 @@ Başlangıç kayıtları (metinler Postman testlerinde görülen yanıtlarla bir
 | E09 | PDF base64'e çevrilemedi |
 | E10 | ArkSigner ayarları bulunamadı (ZEM_T017_EIMZA) |
 | E11 | Cari için imzacı (KNVK işlev 99) bulunamadı |
-| E12 | Cari için birden fazla imzacı (KNVK işlev 99) tanımlı |
+| E12 | Cari için e-postası olan birden fazla imzacı (KNVK işlev 99) tanımlı |
 | E13 | İmzacının varsayılan e-posta adresi bulunamadı |
 | E14 | Tahsilat tutarı sayıya çevrilemedi |
 | E15 | ArkSigner hata kodu: |

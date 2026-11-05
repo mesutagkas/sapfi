@@ -590,13 +590,14 @@ class lcl_report implementation.
   endmethod.                    "build_pdf_base64
 
   method get_signer_info.
-    data contacts      type ty_t_signer_contact.
-    data contact_line  type ty_signer_contact.
-    data contact_count type i.
-    data email         type ad_smtpadr.
+    data contacts     type ty_t_signer_contact.
+    data contact_line type ty_signer_contact.
+    data email        type ad_smtpadr.
+    data signer_count type i.
 
     " Cari: KUNNR / LIFNR doluysa o, değilse portalın kullandığı cari
-    " numarası (ACCNO) – ACCNO müşteri ya da satıcı numarası olabilir
+    " numarası (ACCNO). ACCNO hem müşteri hem satıcı numarası olabildiği
+    " için (iş ortağı mutabakatı) iki taraftaki işlev 99 kişileri alınır.
     if form-kunnr is not initial.
       select parnr namev name1 prsnr
         into corresponding fields of table contacts
@@ -616,40 +617,47 @@ class lcl_report implementation.
         where kunnr = form-accno
           and pafkt = signer_function.
 
-      if contacts is initial.
-        select parnr namev name1 prsnr
-          into corresponding fields of table contacts
-          from knvk
-          where lifnr = form-accno
-            and pafkt = signer_function.
-      endif.
+      select parnr namev name1 prsnr
+        appending corresponding fields of table contacts
+        from knvk
+        where lifnr = form-accno
+          and pafkt = signer_function.
     endif.
 
-    " Job'da elle seçim yapılamadığı için imzacı tekil olmalı
-    contact_count = lines( contacts ).
-    if contact_count = 0.
+    sort contacts by parnr.
+    delete adjacent duplicates from contacts comparing parnr.
+
+    if contacts is initial.
       raise exception type lcx_eimza_error exporting error_text = text-e11.
-    elseif contact_count > 1.
-      raise exception type lcx_eimza_error exporting error_text = text-e12.
     endif.
 
-    read table contacts into contact_line index 1.
-
-    if contact_line-prsnr is not initial.
+    " İmzacı, varsayılan e-postası olan işlev 99 kişisidir; e-postası
+    " olmayan eksik / eski kişi kayıtları dikkate alınmaz. Job'da elle
+    " seçim yapılamadığı için bu kişi tekil olmalı.
+    loop at contacts into contact_line where prsnr is not initial.
+      clear email.
       select single smtp_addr
         into email
         from adr6
         where persnumber = contact_line-prsnr
           and flgdefault = abap_true.
-    endif.
 
-    if email is initial.
+      if email is initial.
+        continue.
+      endif.
+
+      signer_count   = signer_count + 1.
+      result-name    = contact_line-namev.
+      result-surname = contact_line-name1.
+      result-email   = email.
+    endloop.
+
+    if signer_count = 0.
       raise exception type lcx_eimza_error exporting error_text = text-e13.
+    elseif signer_count > 1.
+      raise exception type lcx_eimza_error exporting error_text = text-e12.
     endif.
 
-    result-name    = contact_line-namev.
-    result-surname = contact_line-name1.
-    result-email   = email.
     " TCKN (IDNumber) KNVK'da yok; API dokümanında zorunlu görünse de boş
     " gönderim kabul ediliyor. İmzacı kaynağı netleşince doldurulacak.
   endmethod.                    "get_signer_info
