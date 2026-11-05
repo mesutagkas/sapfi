@@ -324,7 +324,7 @@ class lcl_report implementation.
     status_result = call_get_status( tracked_form-wfkey ).
 
     " Teknik hata: statüye dokunulmaz, sonraki çalışmada tekrar sorulur
-    if status_result-error_text is not initial.
+    if status_result-failed = abap_true.
       save_status_result( tracked_form = tracked_form
                           new_status   = eimza_sent
                           message_text = status_result-error_text ).
@@ -380,10 +380,12 @@ class lcl_report implementation.
             input  = response ).
 
       catch cx_ai_system_fault into system_fault.
+        result-failed     = abap_true.
         result-error_text = system_fault->errortext.
         return.
 
       catch cx_ai_application_fault into application_fault.
+        result-failed     = abap_true.
         result-error_text = application_fault->get_text( ).
         return.
     endtry.
@@ -393,6 +395,7 @@ class lcl_report implementation.
     translate success to lower case.
 
     if success <> arksigner_flag_true.
+      result-failed     = abap_true.
       result-error_text = response-mt_sap_arksigner_get_status_ei-error.
       if result-error_text is initial.
         concatenate text-e15 response-mt_sap_arksigner_get_status_ei-error_code
@@ -415,6 +418,7 @@ class lcl_report implementation.
     result-data_text = response-mt_sap_arksigner_get_status_ei-data_text.
 
     if result-data_text is initial.
+      result-failed     = abap_true.
       result-error_text = text-e19.
     endif.
   endmethod.                    "call_get_status
@@ -527,6 +531,7 @@ class lcl_report implementation.
           signer_info = signer_info ).
 
       catch lcx_eimza_error into form_error.
+        send_result-failed     = abap_true.
         send_result-error_text = form_error->error_text.
     endtry.
 
@@ -931,10 +936,12 @@ class lcl_report implementation.
             input  = response ).
 
       catch cx_ai_system_fault into system_fault.
+        result-failed     = abap_true.
         result-error_text = system_fault->errortext.
         return.
 
       catch cx_ai_application_fault into application_fault.
+        result-failed     = abap_true.
         result-error_text = application_fault->get_text( ).
         return.
     endtry.
@@ -948,6 +955,7 @@ class lcl_report implementation.
     if success <> arksigner_flag_true
        or ( result-error_code is not initial
             and result-error_code <> arksigner_error_code_ok ).
+      result-failed     = abap_true.
       result-error_text = response-mt_sap_arksigner_mutabakat_eim-error.
       if result-error_text is initial.
         concatenate text-e15 result-error_code into result-error_text separated by space.
@@ -962,6 +970,7 @@ class lcl_report implementation.
     endif.
 
     if result-workflow_key is initial.
+      result-failed     = abap_true.
       result-error_text = text-e16.
     endif.
   endmethod.                    "send_to_arksigner
@@ -971,10 +980,10 @@ class lcl_report implementation.
     data output_line type ty_output.
     data new_status  type zem_de_210.
 
-    if send_result-error_text is initial.
-      new_status = eimza_sent.
-    else.
+    if send_result-failed = abap_true.
       new_status = eimza_error.
+    else.
+      new_status = eimza_sent.
     endif.
 
     " Yeniden denemede kayıt üzerine yazılır; son denemenin sonucu tutulur

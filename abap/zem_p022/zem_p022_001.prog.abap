@@ -52,6 +52,9 @@ types ty_t_eimza_form type standard table of ty_eimza_form with default key.
 
 " ArkSigner CreateWorkflow sonucu
 types: begin of ty_send_result,
+         " Hata kararı metne değil bu işarete göre verilir; text symbol
+         " eksik olsa bile hata başarı sayılmaz
+         failed       type abap_bool,
          workflow_key type string,
          error_code   type string,
          error_text   type string,
@@ -71,6 +74,7 @@ types: begin of ty_status_result,
          data_text  type string,
          " İmzacı listesi döndüyse iş akışı hâlâ devam ediyor
          pending    type abap_bool,
+         failed     type abap_bool,
          error_text type string,
        end of ty_status_result.
 
