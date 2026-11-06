@@ -190,6 +190,22 @@ method find_other_acc_no.
            racct  type acdoca-racct,
            buzei  type acdoca-buzei,
          end of ty_heal_line.
+*-------------------------------------------------------------------*
+* *- Virman karşı bankası: aday EHO belgesinin banka kalemi (1. kalem)
+* *- hesabı ve satırın karşı banka hesabı
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+  types: begin of ty_bank_line,
+           rbukrs type acdoca-rbukrs,
+           gjahr  type acdoca-gjahr,
+           belnr  type acdoca-belnr,
+           racct  type acdoca-racct,
+         end of ty_bank_line.
+  data: lt_bank_line  type sorted table of ty_bank_line
+                      with non-unique key rbukrs gjahr belnr,
+        ls_bank_line  type ty_bank_line,
+        lv_cntr_hkont type zeho_t002-hkont.
+*-------------------------------------------------------------------*
   data: lt_link       type sorted table of ty_link with non-unique key belnr hkont,
         lt_heal_key   type standard table of ty_bkpf_ref,
         lt_heal_line  type standard table of ty_heal_line,
@@ -414,6 +430,23 @@ method find_other_acc_no.
         for all entries in lt_acdoca
         where bukrs = lt_acdoca-rbukrs
           and belnr = lt_acdoca-belnr.
+*-------------------------------------------------------------------*
+
+*-------------------------------------------------------------------*
+* *- Adayların banka kalemi (1. kalem) hesabı: virman karşı bacağında
+* *- belgenin hangi bankadan atıldığını gösterir
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+      free lt_bank_line.
+      select rbukrs gjahr belnr racct
+        from acdoca
+        into table lt_bank_line
+        for all entries in lt_acdoca
+        where rldnr  = '0L'
+          and rbukrs = lt_acdoca-rbukrs
+          and gjahr  = lt_acdoca-gjahr
+          and belnr  = lt_acdoca-belnr
+          and buzei  = '001'.
 *-------------------------------------------------------------------*
 
 *-- Müşteri / satıcıyı banka satırına taşı
@@ -1103,6 +1136,26 @@ method find_other_acc_no.
 
 *-- Kendi EHO belgesi yoksa mevcut mantık: müşteriye/satıcıya göre seç
             if lv_found = abap_false.
+*-------------------------------------------------------------------*
+* *- Satırın karşı bankası: DK hesabı (SAKNR) şirketin bir banka
+* *- hesabıysa o, değilse karşı IBAN'ın banka hesabı (ZEHO_T002).
+* *- Bulunamazsa karşı banka kontrolü yapılmaz.
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+              clear lv_cntr_hkont.
+              if <fs_out>-saknr is not initial.
+                read table lt_t002 into ls_t002 with key hkont = <fs_out>-saknr.
+                if sy-subrc = 0.
+                  lv_cntr_hkont = ls_t002-hkont.
+                endif.
+              endif.
+              if lv_cntr_hkont is initial and <fs_out>-iban is not initial.
+                read table lt_t002 into ls_t002 with key iban = <fs_out>-iban.
+                if sy-subrc = 0.
+                  lv_cntr_hkont = ls_t002-hkont.
+                endif.
+              endif.
+*-------------------------------------------------------------------*
 *-- Adayları dolaş, müşteriye göre seç
 *            loop at lt_acdoca into ls_acdoca from sy-tabix.
               loop at lt_acdoca into ls_acdoca from lv_first_idx.
@@ -1143,6 +1196,26 @@ method find_other_acc_no.
                 endif.
                 if lv_skip = abap_true.
                   continue.
+                endif.
+*-------------------------------------------------------------------*
+
+*-------------------------------------------------------------------*
+* *- Virman karşı bacağı (EHO belgesi, 1. kalem değil): belge bu
+* *- satırın karşı bankasından atılmış olmalı. Belgenin banka kalemi
+* *- başka bir bankaysa o virmanın belgesidir (ör. VKB'de QNB'den gelen
+* *- satır Akbank'tan atılan virman belgesine bağlanıyordu).
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+                if lv_cntr_hkont is not initial
+                   and ls_acdoca-tcode = lc_eho_tcode
+                   and ls_acdoca-buzei <> '001'.
+                  read table lt_bank_line into ls_bank_line
+                       with table key rbukrs = ls_acdoca-rbukrs
+                                      gjahr  = ls_acdoca-gjahr
+                                      belnr  = ls_acdoca-belnr.
+                  if sy-subrc = 0 and ls_bank_line-racct <> lv_cntr_hkont.
+                    continue.
+                  endif.
                 endif.
 *-------------------------------------------------------------------*
 

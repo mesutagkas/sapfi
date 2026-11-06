@@ -190,11 +190,31 @@ method check_referance.
 * *- kontrolü yapılmaz (eski davranış).
 * *- added by <kullanıcı> 03.11.2026
 *-------------------------------------------------------------------*
+*      clear lv_cntr_hkont.
+*      if lt_counter is not initial and is_out-iban is not initial.
+*        select single hkont from zeho_t002
+*          into lv_cntr_hkont
+*          where iban = is_out-iban.
+*      endif.
+*-------------------------------------------------------------------*
+* *- Karşı banka önce satırın DK hesabından (SAKNR) alınıyor; SAKNR
+* *- şirketin bir banka hesabı (ZEHO_T002) değilse ya da boşsa karşı
+* *- IBAN'dan. IBAN boş satırlarda (ör. VKB AK-VAKIF / QNB-VAKIF) kontrol
+* *- hiç çalışmıyordu. Transit/ara hesap SAKNR'si kontrol dışı kalır.
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
       clear lv_cntr_hkont.
-      if lt_counter is not initial and is_out-iban is not initial.
-        select single hkont from zeho_t002
-          into lv_cntr_hkont
-          where iban = is_out-iban.
+      if lt_counter is not initial.
+        if is_out-saknr is not initial.
+          select single hkont from zeho_t002
+            into lv_cntr_hkont
+            where hkont = is_out-saknr.
+        endif.
+        if lv_cntr_hkont is initial and is_out-iban is not initial.
+          select single hkont from zeho_t002
+            into lv_cntr_hkont
+            where iban = is_out-iban.
+        endif.
       endif.
 *-------------------------------------------------------------------*
 
