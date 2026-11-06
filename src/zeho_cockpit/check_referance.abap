@@ -66,7 +66,14 @@ method check_referance.
     ev_subrc = 4.
 
     lv_xblnr = 'EHO-' && is_out-refbk.     " bapi_header ile aynı (16 karaktere kesilir)
-    lv_bktxt = is_out-refbk.               " yeni belgelerde tam banka referansı
+*    lv_bktxt = is_out-refbk.               " yeni belgelerde tam banka referansı
+*-------------------------------------------------------------------*
+* *- Yeni belgelerde başlık metni (BKTXT) işlem tanıtıcısını (TRNID)
+* *- taşıyor (bapi_header ile aynı). Eski belgelerde BKTXT boş: XBLNR.
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+    lv_bktxt = is_out-trnid.
+*-------------------------------------------------------------------*
     lv_gjahr = is_out-prdat+0(4).
 
 *-- Aynı gün, aynı referansla atılmış ve ters çevrilmemiş tüm belgeler
@@ -84,6 +91,21 @@ method check_referance.
           and bldat = is_out-prdat
           and ( xblnr = lv_xblnr or bktxt = lv_bktxt )
           and stblg = space.
+*-------------------------------------------------------------------*
+* *- Banka referansı boş satırda da işlem tanıtıcısıyla atılmış
+* *- belge aranıyor (sadece BKTXT; boş XBLNR 'EHO-' herkesle eşleşir).
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+    elseif lv_bktxt is not initial.
+      select bukrs belnr gjahr xblnr bktxt
+        from bkpf
+        into table lt_bkpf_ref
+        where bukrs = is_out-bukrs
+          and gjahr = lv_gjahr
+          and bldat = is_out-prdat
+          and bktxt = lv_bktxt
+          and stblg = space.
+*-------------------------------------------------------------------*
     endif.
 *-------------------------------------------------------------------*
 

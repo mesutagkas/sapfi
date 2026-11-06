@@ -1064,7 +1064,12 @@ method find_other_acc_no.
 *-------------------------------------------------------------------*
           clear: lv_tabix, lv_first_idx, lv_xblnr_eho, lv_bktxt_eho.
           lv_xblnr_eho = 'EHO-' && <fs_out>-refbk.  " 16 karaktere kesilir
-          lv_bktxt_eho = <fs_out>-refbk.            " tam banka referansı
+*          lv_bktxt_eho = <fs_out>-refbk.            " tam banka referansı
+*-------------------------------------------------------------------*
+* *- Yeni belgelerde başlık metni = işlem tanıtıcısı (bapi_header)
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+          lv_bktxt_eho = <fs_out>-trnid.
 *-------------------------------------------------------------------*
 
 *-- Aynı hesap/tarih/tutar/para birimindeki ilk aday
@@ -1452,7 +1457,13 @@ method find_other_acc_no.
 
         clear lv_heal.
         lv_xblnr_eho = 'EHO-' && <fs_out>-refbk.
-        lv_bktxt_eho = <fs_out>-refbk.
+*        lv_bktxt_eho = <fs_out>-refbk.
+*-------------------------------------------------------------------*
+* *- Yeni belgelerde başlık metni = işlem tanıtıcısı (bapi_header)
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+        lv_bktxt_eho = <fs_out>-trnid.
+*-------------------------------------------------------------------*
         if ( ls_bkpf_ref-bktxt is not initial and ls_bkpf_ref-bktxt = lv_bktxt_eho )
         or ( ls_bkpf_ref-bktxt is initial     and ls_bkpf_ref-xblnr = lv_xblnr_eho ).
           lv_heal = abap_true.                        " satırın kendi belgesi

@@ -153,14 +153,16 @@ method bapi_header.
 *    ENDIF.
 
 *-------------------------------------------------------------------*
-* *- Başlık metni (BKTXT) = tam banka referansı. XBLNR 16 karaktere
-* *- kesildiği için ('EHO-' + ilk 12 karakter) aynı gün gelen
-* *- hareketler (ör. VKB: 2026015377955410 / 2026015377955964) aynı
-* *- XBLNR'yi alıyordu. check_referance ve find_other_acc_no belgenin
-* *- satırın kendi belgesi olup olmadığına önce BKTXT ile bakıyor.
+* *- Başlık metni (BKTXT) = işlem tanıtıcısı (TRNID, tekil, en fazla
+* *- 10 karakter). Banka referansı boş gelebiliyor, 25 karakterden uzun
+* *- olabiliyor ve XBLNR'de 16 karaktere kesiliyor ('EHO-' + ilk 12
+* *- karakter): aynı gün gelen hareketler (ör. VKB 2026015377955410 /
+* *- 2026015377955964) aynı XBLNR'yi alıyordu. check_referance ve
+* *- find_other_acc_no belgenin satırın kendi belgesi olup olmadığına
+* *- önce BKTXT = TRNID ile bakıyor.
 * *- added by <kullanıcı> 06.11.2026
 *-------------------------------------------------------------------*
-    ch_header-header_txt  = is_out-refbk.
+    ch_header-header_txt  = is_out-trnid.
 *-------------------------------------------------------------------*
 
     call function 'OWN_LOGICAL_SYSTEM_GET'
