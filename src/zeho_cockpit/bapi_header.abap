@@ -152,6 +152,17 @@ method bapi_header.
     ch_header-ref_doc_no  = 'EHO-' && is_out-refbk.
 *    ENDIF.
 
+*-------------------------------------------------------------------*
+* *- Başlık metni (BKTXT) = tam banka referansı. XBLNR 16 karaktere
+* *- kesildiği için ('EHO-' + ilk 12 karakter) aynı gün gelen
+* *- hareketler (ör. VKB: 2026015377955410 / 2026015377955964) aynı
+* *- XBLNR'yi alıyordu. check_referance ve find_other_acc_no belgenin
+* *- satırın kendi belgesi olup olmadığına önce BKTXT ile bakıyor.
+* *- added by <kullanıcı> 06.11.2026
+*-------------------------------------------------------------------*
+    ch_header-header_txt  = is_out-refbk.
+*-------------------------------------------------------------------*
+
     call function 'OWN_LOGICAL_SYSTEM_GET'
       importing
         own_logical_system = ch_header-obj_sys.
