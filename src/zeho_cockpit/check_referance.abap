@@ -199,7 +199,7 @@ method check_referance.
 *-------------------------------------------------------------------*
 * *- Karşı banka önce satırın DK hesabından (SAKNR) alınıyor; SAKNR
 * *- şirketin bir banka hesabı (ZEHO_T002) değilse ya da boşsa karşı
-* *- IBAN'dan. IBAN boş satırlarda (ör. VKB AK-VAKIF / QNB-VAKIF) kontrol
+* *- IBAN'dan. IBAN'ı boş ya da ZEHO_T002'de olmayan satırlarda kontrol
 * *- hiç çalışmıyordu. Transit/ara hesap SAKNR'si kontrol dışı kalır.
 * *- added by <kullanıcı> 06.11.2026
 *-------------------------------------------------------------------*
