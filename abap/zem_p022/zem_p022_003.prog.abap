@@ -575,6 +575,11 @@ class lcl_report implementation.
       raise exception type lcx_eimza_error exporting error_text = text-e01.
     endif.
 
+    " ZEM_F002_02 bakiye satırlarının ardından "Toplam" ve "Genel Toplam"
+    " özet satırlarını da döner; özet satırlarında para birimi boştur.
+    " Formdaki bakiye tablosuna ve toplama yalnızca bakiye satırları girer.
+    delete recdt where waers is initial.
+
     total_amount = calculate_total_amount( recdt ).
 
     pdf_data = generate_pdf_form(
